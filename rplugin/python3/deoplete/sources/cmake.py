@@ -53,6 +53,8 @@ class Source(Base):
         self._gather_identifier()
 
     def gather_candidates(self, context):
+        self._gather_identifier()
+
         commands = [{'word': c, 'kind': 'command', 'menu': self._commands[c]}
                 for c in self._commands]
         variables = [{'word': v, 'kind': 'variable'}
