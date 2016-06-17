@@ -77,7 +77,7 @@ class Source(Base):
 
         # setup completion cache
         position = [1, 1]
-        cache_key = self._get_current_cache_key(position)
+        cache_key = self._get_current_cache_key(context, position)
         self._gather_completion(context, position, cache_key)
 
     def _get_closest_delimiter(self, context):
@@ -162,25 +162,27 @@ class Source(Base):
                 continue
         return parsed_result
 
-    def _get_current_cache_key(self, position):
+    def _get_current_cache_key(self, context, position):
         line = self.vim.current.buffer[position[0]-1]
         column = position[1]
         delimiter = ['->', '.', '::']
         first = max([line.rfind(d, 0, column-1) for d in delimiter])
+        fileid = os.path.join(context['cwd'], context['bufname']) + ':'
+
         if first < 0:
             function_name = re.compile(r'\s*([\w\d])\s*\([^\(&^\)]*\)\s*{')
             content = '\n'.join(self.vim.current.buffer[:position[0]])
             target = function_name.findall(content)
             if target:
-                return target[-1]
+                return fileid + target[-1]
             else:
-                return 'start'
+                return fileid + 'start'
 
         second = max([line.rfind(d, 0, first-1) for d in delimiter])
         if second < 0:
-            return line[0:first].strip()
+            return fileid + line[0:first].strip()
         else:
-            return line[second+1:first].strip()
+            return fileid + line[second+1:first].strip()
 
     def _gather_completion(self, context, position, key):
         buffer_name = self._get_buffer_name(context)
@@ -207,7 +209,8 @@ class Source(Base):
     def gather_candidates(self, context):
         self._update_file_cache(context)
 
-        cache_key = self._get_current_cache_key(context['position'][1:])
+        cache_key = self._get_current_cache_key(context,
+                                                context['position'][1:])
         position = self._get_completion_position(context)
 
         parsed_result = []
