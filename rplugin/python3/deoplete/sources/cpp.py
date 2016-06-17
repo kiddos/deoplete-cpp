@@ -3,20 +3,19 @@ import os
 import re
 from clang.cindex import TranslationUnit as tu
 
-
 class Source(Base):
     def __init__(self, vim):
         Base.__init__(self, vim)
 
         self.vim = vim
-        self.name = 'cpp-complete'
-        self.mark = '[clang]'
+        self.name = 'cpp'
+        self.mark = '[cpp]'
         self.rank = 600
-        self.debug_enabled = True
+        self.debug_enabled = False
         self.filetypes = ['c', 'cpp', 'objc', 'objc++', 'arduino']
         self.input_pattern = (
-            r'[^.\s\t\d\n]\.\w*|'
-            r'[^.\s\t\d\n]->\w*|'
+            r'[^.\s\t\d\n_]\.\w*|'
+            r'[^.\s\t\d\n_]->\w*|'
             r'[\w\d]::\w*')
         self.max_menu_width = 160
         self.max_abbr_width = 160
@@ -26,11 +25,24 @@ class Source(Base):
             self.vim.vars['deoplete#sources#cpp#flags']
         self._clang_include_path = \
             self.vim.vars['deoplete#sources#cpp#include_path']
+        self._arduino_path = \
+            self.vim.vars['deoplete#sources#cpp#arduino_path']
+        self._setup_arduino_path()
 
         # cache
         self._file_cache = {}
         self._translation_unit_cache = {}
         self._result_cache = {}
+
+    def _setup_arduino_path(self):
+        arduino_core = os.path.join(self._arduino_path,
+                                    'hardware/arduino/cores/arduino')
+        arduino_library = os.path.join(self._arduino_path,
+                                       'libraries')
+        self._arduino_include_path = [arduino_core] + \
+            [os.path.join(arduino_library, l)
+             for l in os.listdir(arduino_library)]
+
 
     def _get_buffer_name(self, context):
         buffer_name = context['bufname'].replace('.ino', '.cpp')
@@ -39,22 +51,34 @@ class Source(Base):
     def _update_file_cache(self, context):
         filepath = self._get_buffer_name(context)
         content = '\n'.join(self.vim.current.buffer)
+
+        # add default library for arduino
+        if context['bufname'].endswith('.ino'):
+            arduino = re.compile(r'\s*#include\s<Arduino.h>')
+            if not arduino.findall(content):
+                content = '#include <Arduino.h>\n' + content
+
         self._file_cache[filepath] = content
 
     def on_event(self, context):
         # change input pattern
         if context['filetype'] == 'c':
             self.input_pattern = (
-                r'[^.\s\t\d\n]\.\w*|'
-                r'[^.\s\t\d\n]->\w*')
+                r'[^.\s\t\d\n_]\.\w*|'
+                r'[^.\s\t\d\n_]->\w*')
         else:
             self.input_pattern = (
-                r'[^.\s\t\d\n]\.\w*|'
-                r'[^.\s\t\d\n]->\w*|'
-                r'\w[\w\d]*::\w*')
+                r'[^.\s\t\d\n_]\.\w*|'
+                r'[^.\s\t\d\n_]->\w*|'
+                r'[\w\d]::\w*')
 
         # cache the file
         self._update_file_cache(context)
+
+        # setup completion cache
+        position = [1, 1]
+        cache_key = self._get_current_cache_key(position)
+        self._gather_completion(context, position, cache_key)
 
     def _get_closest_delimiter(self, context):
         delimiter = ['.', '->', '::']
@@ -64,12 +88,19 @@ class Source(Base):
     def _get_completion_position(self, context):
         return (context['position'][1], self._get_closest_delimiter(context)+1)
 
-    def _get_completion_result(self, filepath, position):
+    def _get_completion_flags(self, context):
+        include_flags = self._clang_include_path
+        if (context['bufname'].endswith('.ino')):
+            include_flags += self._arduino_include_path
+        flags = self._clang_flags + ['-I' + inc for inc in include_flags]
+        return flags
+
+    def _get_completion_result(self, context, filepath, position):
+        flags = self._get_completion_flags(context)
         all_files = [(f, self._file_cache[f]) for f in self._file_cache]
         # cache translation unit
         if filepath not in self._translation_unit_cache:
-            tunit = tu.from_source(filepath,
-                                   self._clang_flags + self._clang_include_path,
+            tunit = tu.from_source(filepath, flags,
                                    unsaved_files=all_files,
                                    options=tu.PARSE_CACHE_COMPLETION_RESULTS |
                                            tu.PARSE_DETAILED_PROCESSING_RECORD |
@@ -137,12 +168,37 @@ class Source(Base):
         delimiter = ['->', '.', '::']
         first = max([line.rfind(d, 0, column-1) for d in delimiter])
         if first < 0:
-            return 'empty-function'
+            function_name = re.compile(r'\s*([\w\d])\s*\([^\(&^\)]*\)\s*{')
+            content = '\n'.join(self.vim.current.buffer[:position[0]])
+            target = function_name.findall(content)
+            if target:
+                return target[-1]
+            else:
+                return 'start'
+
         second = max([line.rfind(d, 0, first-1) for d in delimiter])
         if second < 0:
             return line[0:first].strip()
         else:
             return line[second+1:first].strip()
+
+    def _gather_completion(self, context, position, key):
+        buffer_name = self._get_buffer_name(context)
+        completion_result = \
+            self._get_completion_result(context, buffer_name, position)
+        parsed_result = \
+            self._get_parsed_completion_result(completion_result)
+        self._result_cache[key] = parsed_result
+        return parsed_result
+
+    def _get_candidates(self, parsed_result):
+        candidates = []
+        for pr in parsed_result:
+            candidate = {'word': pr['TypedText'],
+                         'kind': pr['Placeholder'],
+                         'menu': pr['ResultType']}
+            candidates.append(candidate)
+        return candidates
 
     def get_complete_position(self, context):
         m = re.search(r'\w*$', context['input'])
@@ -152,21 +208,12 @@ class Source(Base):
         self._update_file_cache(context)
 
         cache_key = self._get_current_cache_key(context['position'][1:])
+        position = self._get_completion_position(context)
 
+        parsed_result = []
         if cache_key not in self._result_cache:
-            buffer_name = self._get_buffer_name(context)
-            position = self._get_completion_position(context)
-            completion_result = self._get_completion_result(buffer_name, position)
-            parsed_result = self._get_parsed_completion_result(completion_result)
-
-            self._result_cache[cache_key] = parsed_result
-            return [{'word': r['TypedText'],
-                     'kind': r['Placeholder'],
-                     'menu': r['ResultType']}
-                     for r in parsed_result]
+            parsed_result = self._gather_completion(context, position,
+                                                    cache_key)
         else:
             parsed_result = self._result_cache[cache_key]
-            return [{'word': r['TypedText'],
-                     'kind': r['Placeholder'],
-                     'menu': r['ResultType']}
-                     for r in parsed_result]
+        return self._get_candidates(parsed_result)
