@@ -11,5 +11,6 @@ let g:deoplete#sources#cpp#include_path =
 \   get(g:, 'deoplete#sources#cpp#include_path',
 \   ['/usr/local', '.'])
 
-
-
+let g:deoplete#sources#cpp#arduino_path =
+\   get(g:, 'deoplete#sources#cpp#arduino_path',
+\   '/usr/local/share/arduino')
