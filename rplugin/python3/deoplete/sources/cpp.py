@@ -32,6 +32,7 @@ class Source(Base):
         # cache
         self._file_cache = {}
         self._translation_unit_cache = {}
+        self._position_cache = {}
         self._result_cache = {}
 
     def _setup_arduino_path(self):
@@ -76,9 +77,18 @@ class Source(Base):
         self._update_file_cache(context)
 
         # setup completion cache
-        position = [1, 1]
-        cache_key = self._get_current_cache_key(context, position)
-        self._gather_completion(context, position, cache_key)
+        if not self._result_cache:
+            position = [1, 1]
+            cache_key = self._get_current_cache_key(context, position)
+            self._gather_completion(context, position, cache_key)
+        else:
+            filepath = self._get_buffer_name(context)
+            keys_to_remove = []
+            for key in self._result_cache:
+                if key.startswith(filepath):
+                    keys_to_remove.append(key)
+            for key in keys_to_remove:
+                self._result_cache.pop(key, None)
 
     def _get_closest_delimiter(self, context):
         delimiter = ['.', '->', '::']
@@ -191,6 +201,7 @@ class Source(Base):
         parsed_result = \
             self._get_parsed_completion_result(completion_result)
         self._result_cache[key] = parsed_result
+        self._position_cache[key] = position
         return parsed_result
 
     def _get_candidates(self, parsed_result):
