@@ -21,8 +21,12 @@ class Source(Base):
         self.max_abbr_width = 160
 
         # include flags
-        self._clang_flags = \
-            self.vim.vars['deoplete#sources#cpp#flags']
+        self._get_detail = \
+            self.vim.vars['deoplete#sources#cpp#get_detail']
+        self._clang_cflags = \
+            self.vim.vars['deoplete#sources#cpp#cflags']
+        self._clang_cppflags = \
+            self.vim.vars['deoplete#sources#cpp#cppflags']
         self._clang_include_path = \
             self.vim.vars['deoplete#sources#cpp#include_path']
         self._arduino_path = \
@@ -78,10 +82,12 @@ class Source(Base):
 
         # setup completion cache
         if not self._result_cache:
+            # parse if not yet been parse
             position = [1, 1]
             cache_key = self._get_current_cache_key(context, position)
             self._gather_completion(context, position, cache_key)
         else:
+            # remove old result
             filepath = self._get_buffer_name(context)
             keys_to_remove = []
             for key in self._result_cache:
@@ -100,22 +106,33 @@ class Source(Base):
 
     def _get_completion_flags(self, context):
         include_flags = self._clang_include_path
-        if (context['bufname'].endswith('.ino')):
+        if context['bufname'].endswith('.ino'):
             include_flags += self._arduino_include_path
-        flags = self._clang_flags + ['-I' + inc for inc in include_flags]
+        flags = []
+        if context['bufname'].endswith('.c'):
+            flags = self._clang_cflags
+        else:
+            flags = self._clang_cppflags
+        flags += ['-I' + inc for inc in include_flags]
         return flags
 
     def _get_completion_result(self, context, filepath, position):
+        # get flags and files
         flags = self._get_completion_flags(context)
         all_files = [(f, self._file_cache[f]) for f in self._file_cache]
+
+        # get translation unit options
+        tu_options = tu.PARSE_CACHE_COMPLETION_RESULTS | \
+                     tu.PARSE_PRECOMPILED_PREAMBLE | \
+                     tu.PARSE_INCOMPLETE
+        if self._get_detail:
+            tu_options |= tu.PARSE_DETAILED_PROCESSING_RECORD
+
         # cache translation unit
         if filepath not in self._translation_unit_cache:
             tunit = tu.from_source(filepath, flags,
                                    unsaved_files=all_files,
-                                   options=tu.PARSE_CACHE_COMPLETION_RESULTS |
-                                           tu.PARSE_DETAILED_PROCESSING_RECORD |
-                                           tu.PARSE_PRECOMPILED_PREAMBLE |
-                                           tu.PARSE_INCOMPLETE)
+                                   options=tu_options)
             result = tunit.codeComplete(filepath,
                                         position[0],
                                         position[1],
