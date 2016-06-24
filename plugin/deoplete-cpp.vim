@@ -4,11 +4,11 @@ endif
 let g:loaded_deoplete_cpp = 1
 
 let g:deoplete#sources#cpp#cflags =
-\   get(g:, 'deoplete#sources#cpp#flags',
+\   get(g:, 'deoplete#sources#cpp#cflags',
 \   ['-std=c11', '-Wall', '-Wextra'])
 
 let g:deoplete#sources#cpp#cppflags =
-\   get(g:, 'deoplete#sources#cpp#flags',
+\   get(g:, 'deoplete#sources#cpp#cppflags',
 \   ['-std=c++11', '-Wall', '-Wextra'])
 
 let g:deoplete#sources#cpp#include_path =
