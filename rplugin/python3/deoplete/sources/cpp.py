@@ -27,8 +27,14 @@ class Source(Base):
             self.vim.vars['deoplete#sources#cpp#cflags']
         self._clang_cppflags = \
             self.vim.vars['deoplete#sources#cpp#cppflags']
-        self._clang_include_path = \
-            self.vim.vars['deoplete#sources#cpp#include_path']
+        self._clang_objcflags = \
+            self.vim.vars['deoplete#sources#cpp#objcflags']
+        self._clang_objcppflags = \
+            self.vim.vars['deoplete#sources#cpp#objcppflags']
+        self._cpp_include_path = \
+            self.vim.vars['deoplete#sources#cpp#cpp_include_path']
+        self._objc_include_path = \
+            self.vim.vars['deoplete#sources#cpp#objc_include_path']
         self._arduino_path = \
             self.vim.vars['deoplete#sources#cpp#arduino_path']
         self._setup_arduino_path()
@@ -38,6 +44,7 @@ class Source(Base):
         self._translation_unit_cache = {}
         self._position_cache = {}
         self._result_cache = {}
+
 
     def _setup_arduino_path(self):
         arduino_core = os.path.join(self._arduino_path,
@@ -53,6 +60,7 @@ class Source(Base):
         buffer_name = context['bufname'].replace('.ino', '.cpp')
         return os.path.join(context['cwd'], buffer_name)
 
+
     def _update_file_cache(self, context):
         filepath = self._get_buffer_name(context)
         content = '\n'.join(self.vim.current.buffer)
@@ -64,6 +72,7 @@ class Source(Base):
                 content = '#include <Arduino.h>\n' + content
 
         self._file_cache[filepath] = content
+
 
     def on_event(self, context):
         # change input pattern
@@ -96,25 +105,39 @@ class Source(Base):
             for key in keys_to_remove:
                 self._result_cache.pop(key, None)
 
+
     def _get_closest_delimiter(self, context):
         delimiter = ['.', '->', '::']
         current_line = self.vim.current.buffer[context['position'][1]-1]
         return max([current_line.rfind(d) + len(d) for d in delimiter])
 
+
     def _get_completion_position(self, context):
         return (context['position'][1], self._get_closest_delimiter(context)+1)
 
+
     def _get_completion_flags(self, context):
-        include_flags = self._clang_include_path
+        include_flags = self._cpp_include_path
+        if context['filetype'] in ['objc', 'objcpp']:
+            include_flags = self._objc_include_path
+
         if context['bufname'].endswith('.ino'):
             include_flags += self._arduino_include_path
+
         flags = []
-        if context['bufname'].endswith('.c'):
+        if context['filetype'] == 'c':
             flags = self._clang_cflags
+        elif context['filetype'] == 'cpp':
+            flags = self._clang_cppflags
+        elif context['filetype'] == 'objc':
+            flags = self._clang_objcflags
+        elif context['filetype'] == 'objcpp':
+            flags = self._clang_objcppflags
         else:
             flags = self._clang_cppflags
         flags += ['-I' + inc for inc in include_flags]
         return flags
+
 
     def _get_completion_result(self, context, filepath, position):
         # get flags and files
@@ -147,6 +170,7 @@ class Source(Base):
                              unsaved_files=all_files)
             return result
 
+
     def _parse_completion_result(self, result, key):
         pattern = re.compile(key + r':\s(.*?)(\s\||$)')
         match = pattern.findall(result)
@@ -159,6 +183,7 @@ class Source(Base):
             return match[0]
         else:
             return ''
+
 
     def _get_parsed_completion_result(self, completion_result):
         parsed_result = []
@@ -189,6 +214,7 @@ class Source(Base):
                 continue
         return parsed_result
 
+
     def _get_current_cache_key(self, context, position):
         line = self.vim.current.buffer[position[0]-1]
         column = position[1]
@@ -211,6 +237,7 @@ class Source(Base):
         else:
             return fileid + line[second+1:first].strip()
 
+
     def _gather_completion(self, context, position, key):
         buffer_name = self._get_buffer_name(context)
         completion_result = \
@@ -221,6 +248,7 @@ class Source(Base):
         self._position_cache[key] = position
         return parsed_result
 
+
     def _get_candidates(self, parsed_result):
         candidates = []
         for pr in parsed_result:
@@ -230,9 +258,11 @@ class Source(Base):
             candidates.append(candidate)
         return candidates
 
+
     def get_complete_position(self, context):
         m = re.search(r'\w*$', context['input'])
         return m.start() if m else -1
+
 
     def gather_candidates(self, context):
         self._update_file_cache(context)
