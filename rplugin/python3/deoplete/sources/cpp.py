@@ -12,7 +12,7 @@ class Source(Base):
         self.mark = '[cpp]'
         self.rank = 600
         self.debug_enabled = False
-        self.filetypes = ['c', 'cpp', 'objc', 'objc++', 'arduino']
+        self.filetypes = ['c', 'cpp', 'objc', 'objc++', 'cuda', 'arduino']
         self.input_pattern = (
             r'[^.\s\t\d\n_]\.\w*|'
             r'[^.\s\t\d\n_]->\w*|'
@@ -20,9 +20,9 @@ class Source(Base):
         self.max_menu_width = 160
         self.max_abbr_width = 160
 
-        # include flags
         self._get_detail = \
             self.vim.vars['deoplete#sources#cpp#get_detail']
+        # include flags
         self._clang_cflags = \
             self.vim.vars['deoplete#sources#cpp#cflags']
         self._clang_cppflags = \
@@ -31,13 +31,18 @@ class Source(Base):
             self.vim.vars['deoplete#sources#cpp#objcflags']
         self._clang_objcppflags = \
             self.vim.vars['deoplete#sources#cpp#objcppflags']
+        # include path
         self._cpp_include_path = \
             self.vim.vars['deoplete#sources#cpp#cpp_include_path']
         self._objc_include_path = \
             self.vim.vars['deoplete#sources#cpp#objc_include_path']
+        # arduino path
         self._arduino_path = \
             self.vim.vars['deoplete#sources#cpp#arduino_path']
         self._setup_arduino_path()
+        # cuda path
+        self._cuda_path = \
+            self.vim.vars['deoplete#sources#cpp#cuda_path']
 
         # cache
         self._file_cache = {}
@@ -49,15 +54,17 @@ class Source(Base):
     def _setup_arduino_path(self):
         arduino_core = os.path.join(self._arduino_path,
                                     'hardware/arduino/cores/arduino')
-        arduino_library = os.path.join(self._arduino_path,
-                                       'libraries')
+        arduino_library = os.path.join(self._arduino_path, 'libraries')
         self._arduino_include_path = [arduino_core] + \
             [os.path.join(arduino_library, l)
              for l in os.listdir(arduino_library)]
 
 
     def _get_buffer_name(self, context):
-        buffer_name = context['bufname'].replace('.ino', '.cpp')
+        if context['bufname'].endswith('.ino'):
+            buffer_name = context['bufname'].replace('.ino', '.cpp')
+        if context['bufname'].endswith('.cu'):
+            buffer_name = context['bufname'].replace('.cu', '.cpp')
         return os.path.join(context['cwd'], buffer_name)
 
 
@@ -70,6 +77,11 @@ class Source(Base):
             arduino = re.compile(r'\s*#include\s<Arduino.h>')
             if not arduino.findall(content):
                 content = '#include <Arduino.h>\n' + content
+        elif context['bufname'].endswith('.cu'):
+            arduino = re.compile(r'\s*#include\s<cuda_runtime_api.h>')
+            if not arduino.findall(content):
+                content = '#include <cuda_runtime_api.h>\n' + content
+                content = '#include <cuda.h>\n' + content
 
         self._file_cache[filepath] = content
 
@@ -122,7 +134,14 @@ class Source(Base):
             include_flags = self._objc_include_path
 
         if context['bufname'].endswith('.ino'):
-            include_flags += self._arduino_include_path
+            for path in self._arduino_include_path:
+                if path not in include_flags:
+                    include_flags.append(path)
+
+        if context['bufname'].endswith('.cu'):
+            for path in self._cuda_path:
+                if path not in include_flags:
+                    include_flags.append(path)
 
         flags = []
         if context['filetype'] == 'c':
@@ -177,18 +196,20 @@ class Source(Base):
         if match:
             return match[0][0]
 
-        pattern = re.compile(r'\'([^.^\']*?)\',\s' + key)
+        pattern = re.compile(r'\'([^\']*?)\',\s' + key)
         match = pattern.findall(result)
         if match:
-            return match[0]
+            return ','.join(match)
         else:
             return ''
 
 
     def _get_parsed_completion_result(self, completion_result):
         parsed_result = []
+        f = open('/home/joseph/test.log', 'w')
         for result in completion_result.results:
             try:
+                f.write(str(result) + '\n')
                 r = str(result)
                 parsed_result.append({
                     'TypedText':
@@ -212,6 +233,7 @@ class Source(Base):
                 })
             except:
                 continue
+        f.close()
         return parsed_result
 
 
