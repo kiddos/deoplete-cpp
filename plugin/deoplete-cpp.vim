@@ -31,6 +31,10 @@ let g:deoplete#sources#cpp#arduino_path =
 \   get(g:, 'deoplete#sources#cpp#arduino_path',
 \   '/usr/local/share/arduino')
 
+let g:deoplete#sources#cpp#cuda_path =
+\   get(g:, 'deoplete#sources#cpp#cuda_path',
+\   ['/usr/local/cuda/include'])
+
 let g:deoplete#sources#cpp#get_detail =
 \   get(g:, 'deoplete#sources#cpp#get_detail',
 \   1)
