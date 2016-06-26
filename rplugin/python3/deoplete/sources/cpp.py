@@ -61,9 +61,10 @@ class Source(Base):
 
 
     def _get_buffer_name(self, context):
+        buffer_name = context['bufname']
         if context['bufname'].endswith('.ino'):
             buffer_name = context['bufname'].replace('.ino', '.cpp')
-        if context['bufname'].endswith('.cu'):
+        elif context['bufname'].endswith('.cu'):
             buffer_name = context['bufname'].replace('.cu', '.cpp')
         return os.path.join(context['cwd'], buffer_name)
 
