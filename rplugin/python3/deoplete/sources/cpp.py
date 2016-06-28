@@ -62,10 +62,12 @@ class Source(Base):
 
     def _get_buffer_name(self, context):
         buffer_name = context['bufname']
-        if context['bufname'].endswith('.ino'):
-            buffer_name = context['bufname'].replace('.ino', '.cpp')
-        elif context['bufname'].endswith('.cu'):
-            buffer_name = context['bufname'].replace('.cu', '.cpp')
+        # if the filetype is not supported by clang
+        # make it a cpp
+        if context['filetype'] not in ['c', 'cpp', 'objc']:
+            buffer_name += '.cpp'
+        elif not context['bufname'].endswith('.' + context['filetype']):
+            buffer_name = buffer_name + '.' + context['filetype']
         return os.path.join(context['cwd'], buffer_name)
 
 
@@ -207,10 +209,8 @@ class Source(Base):
 
     def _get_parsed_completion_result(self, completion_result):
         parsed_result = []
-        f = open('/home/joseph/test.log', 'w')
         for result in completion_result.results:
             try:
-                f.write(str(result) + '\n')
                 r = str(result)
                 parsed_result.append({
                     'TypedText':
@@ -234,7 +234,6 @@ class Source(Base):
                 })
             except:
                 continue
-        f.close()
         return parsed_result
 
 
