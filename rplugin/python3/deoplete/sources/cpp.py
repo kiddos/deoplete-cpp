@@ -136,15 +136,15 @@ class Source(Base):
         if context['filetype'] in ['objc', 'objcpp']:
             include_flags = self._objc_include_path
 
-        if context['bufname'].endswith('.ino'):
-            for path in self._arduino_include_path:
-                if path not in include_flags:
-                    include_flags.append(path)
+        # add arduino path
+        for path in self._arduino_include_path:
+            if path not in include_flags:
+                include_flags.append(path)
 
-        if context['bufname'].endswith('.cu'):
-            for path in self._cuda_path:
-                if path not in include_flags:
-                    include_flags.append(path)
+        # add cuda path
+        for path in self._cuda_path:
+            if path not in include_flags:
+                include_flags.append(path)
 
         flags = []
         if context['filetype'] == 'c':
