@@ -245,14 +245,16 @@ class Source(Base):
         fileid = os.path.join(context['cwd'], context['bufname']) + ':'
 
         if first < 0:
+            # find the closest function name to current position
             function_name = re.compile(r'\s*([\w\d])\s*\([^\(&^\)]*\)\s*{')
             content = '\n'.join(self.vim.current.buffer[:position[0]])
             target = function_name.findall(content)
             if target:
                 return fileid + target[-1]
             else:
-                return fileid + 'start'
+                return fileid + 'line' + str(position[0])
 
+        # try to find the second delimiter
         second = max([line.rfind(d, 0, first-1) for d in delimiter])
         if second < 0:
             return fileid + line[0:first].strip()
