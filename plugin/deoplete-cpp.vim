@@ -21,7 +21,7 @@ let g:deoplete#sources#cpp#objcppflags =
 \   ['-Wall', '-Wextra'])
 
 " include path
-let g:deoplete#sources#cpp#cpp_include_path =
+let g:deoplete#sources#cpp#c_include_path =
 \   get(g:, 'deoplete#sources#cpp#c_include_path',
 \   ['/usr/local/include', '.'])
 
