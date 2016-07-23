@@ -22,20 +22,27 @@ class Source(Base):
 
         self._get_detail = \
             self.vim.vars['deoplete#sources#cpp#get_detail']
+
         # include flags
-        self._clang_cflags = \
+        self._cflags = \
             self.vim.vars['deoplete#sources#cpp#cflags']
-        self._clang_cppflags = \
+        self._cppflags = \
             self.vim.vars['deoplete#sources#cpp#cppflags']
-        self._clang_objcflags = \
+        self._objcflags = \
             self.vim.vars['deoplete#sources#cpp#objcflags']
-        self._clang_objcppflags = \
+        self._objcppflags = \
             self.vim.vars['deoplete#sources#cpp#objcppflags']
+
         # include path
+        self._c_include_path = \
+            self.vim.vars['deoplete#sources#cpp#c_include_path']
         self._cpp_include_path = \
             self.vim.vars['deoplete#sources#cpp#cpp_include_path']
         self._objc_include_path = \
             self.vim.vars['deoplete#sources#cpp#objc_include_path']
+        self._objcpp_include_path = \
+            self.vim.vars['deoplete#sources#cpp#objcpp_include_path']
+
         # arduino path
         self._arduino_path = \
             self.vim.vars['deoplete#sources#cpp#arduino_path']
@@ -135,31 +142,35 @@ class Source(Base):
 
 
     def _get_completion_flags(self, context):
+        # setup flags
+        flags = []
+        if context['filetype'] == 'c':
+            flags = self._cflags
+        elif context['filetype'] == 'cpp':
+            flags = self._cppflags
+        elif context['filetype'] == 'objc':
+            flags = self._objcflags
+        elif context['filetype'] == 'objcpp':
+            flags = self._objcppflags
+        else:
+            # default to cpp flag if filetype not known
+            flags = self._cppflags
+
+        # set up include path flags
         include_flags = self._cpp_include_path
         if context['filetype'] in ['objc', 'objcpp']:
             include_flags = self._objc_include_path
 
-        # add arduino path
+        # add arduino path if the path not already exist
         for path in self._arduino_include_path:
             if path not in include_flags:
                 include_flags.append(path)
 
-        # add cuda path
+        # add cuda path if the path not already exist
         for path in self._cuda_path:
             if path not in include_flags:
                 include_flags.append(path)
 
-        flags = []
-        if context['filetype'] == 'c':
-            flags = self._clang_cflags
-        elif context['filetype'] == 'cpp':
-            flags = self._clang_cppflags
-        elif context['filetype'] == 'objc':
-            flags = self._clang_objcflags
-        elif context['filetype'] == 'objcpp':
-            flags = self._clang_objcppflags
-        else:
-            flags = self._clang_cppflags
         flags += ['-I' + inc for inc in include_flags]
         return flags
 

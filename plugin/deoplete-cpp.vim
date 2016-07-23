@@ -3,6 +3,7 @@ if exists('g:loaded_deoplete_cpp')
 endif
 let g:loaded_deoplete_cpp = 1
 
+" flags
 let g:deoplete#sources#cpp#cflags =
 \   get(g:, 'deoplete#sources#cpp#cflags',
 \   ['-std=c11', '-Wall', '-Wextra'])
@@ -19,22 +20,34 @@ let g:deoplete#sources#cpp#objcppflags =
 \   get(g:, 'deoplete#sources#cpp#objcppflags',
 \   ['-Wall', '-Wextra'])
 
+" include path
+let g:deoplete#sources#cpp#cpp_include_path =
+\   get(g:, 'deoplete#sources#cpp#c_include_path',
+\   ['/usr/local/include', '.'])
+
 let g:deoplete#sources#cpp#cpp_include_path =
 \   get(g:, 'deoplete#sources#cpp#cpp_include_path',
-\   ['/usr/local', '.'])
+\   ['/usr/local/include', '.'])
 
 let g:deoplete#sources#cpp#objc_include_path =
 \   get(g:, 'deoplete#sources#cpp#objc_include_path',
-\   ['/usr/local', '.'])
+\   ['/usr/local/include', '/usr/include/GNUstep'])
 
+let g:deoplete#sources#cpp#objcpp_include_path =
+\   get(g:, 'deoplete#sources#cpp#objcpp_include_path',
+\   ['/usr/local/include', '/usr/include/GNUstep'])
+
+" arudino ide path
 let g:deoplete#sources#cpp#arduino_path =
 \   get(g:, 'deoplete#sources#cpp#arduino_path',
 \   '/usr/local/share/arduino')
 
+" cuda path
 let g:deoplete#sources#cpp#cuda_path =
 \   get(g:, 'deoplete#sources#cpp#cuda_path',
 \   ['/usr/local/cuda/include'])
 
+" should display detail
 let g:deoplete#sources#cpp#get_detail =
 \   get(g:, 'deoplete#sources#cpp#get_detail',
 \   1)
