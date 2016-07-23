@@ -17,6 +17,8 @@ sudo pip3 install libclang==3.6
 * cmake (you need to install cmake to for this to work)
 * arduino (you need to have the [Arduino IDE](https://www.arduino.cc/en/Main/Software))
 
+Note: objc and objcpp are a little weird now, so I temporary disable it
+
 ##Options
 * set the compilation flags
 
