@@ -52,12 +52,15 @@ class Source(Base):
 
 
     def _setup_arduino_path(self):
-        arduino_core = os.path.join(self._arduino_path,
-                                    'hardware/arduino/cores/arduino')
-        arduino_library = os.path.join(self._arduino_path, 'libraries')
-        self._arduino_include_path = [arduino_core] + \
-            [os.path.join(arduino_library, l)
-             for l in os.listdir(arduino_library)]
+        self._arduino_include_path = []
+        if os.path.isdir(self._arduino_path):
+            arduino_core = os.path.join(self._arduino_path,
+                                        'hardware/arduino/cores/arduino')
+            arduino_library = os.path.join(self._arduino_path, 'libraries')
+            self._arduino_include_path += [arduino_core] + \
+                [os.path.join(arduino_library, lib)
+                 for lib in os.listdir(arduino_library)
+                 if os.path.isdir(lib)]
 
 
     def _get_buffer_name(self, context):
