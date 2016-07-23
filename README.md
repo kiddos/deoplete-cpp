@@ -23,11 +23,16 @@ sudo pip3 install libclang==3.6
 ``` vim
 let g:deoplete#sources#cpp#cflags = ['-std=c11', '-Wall', '-Wextra']
 let g:deoplete#sources#cpp#cppflags = ['-std=c++11', '-Wall', '-Wextra']
+let g:deoplete#sources#cpp#objcflags = ['-std=c++11', '-Wall', '-Wextra']
+let g:deoplete#sources#cpp#objcppflags = ['-std=c++11', '-Wall', '-Wextra']
 ```
 * set the compilation include flags
 
 ``` vim
-let g:deoplete#sources#cpp#include_path = ['/usr/local', '.']
+let g:deoplete#sources#cpp#c_include_path = ['/usr/local/include', '.']
+let g:deoplete#sources#cpp#cpp_include_path = ['/usr/local/include', '.']
+let g:deoplete#sources#cpp#objc_include_path = ['/usr/local/include', '/usr/include/GNUstep', '.']
+let g:deoplete#sources#cpp#objcpp_include_path = ['/usr/local/include', '/usr/include/GNUstep', '.']
 ```
 * set where you install arduino
 
