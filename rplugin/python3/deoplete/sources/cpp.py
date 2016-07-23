@@ -2,6 +2,7 @@ from .base import Base
 import os
 import re
 from clang.cindex import TranslationUnit as tu
+import traceback
 
 class Source(Base):
     def __init__(self, vim):
@@ -277,14 +278,17 @@ class Source(Base):
 
 
     def _gather_completion(self, context, position, key):
-        buffer_name = self._get_buffer_name(context)
-        completion_result = \
-            self._get_completion_result(context, buffer_name, position)
-        parsed_result = \
-            self._get_parsed_completion_result(completion_result)
-        self._result_cache[key] = parsed_result
-        self._position_cache[key] = position
-        return parsed_result
+        try:
+            buffer_name = self._get_buffer_name(context)
+            completion_result = \
+                self._get_completion_result(context, buffer_name, position)
+            parsed_result = \
+                self._get_parsed_completion_result(completion_result)
+            self._result_cache[key] = parsed_result
+            self._position_cache[key] = position
+            return parsed_result
+        except:
+            return []
 
 
     def _get_candidates(self, parsed_result):
