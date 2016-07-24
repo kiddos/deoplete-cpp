@@ -13,7 +13,7 @@ class Source(Base):
         self.mark = '[cpp]'
         self.rank = 600
         self.debug_enabled = False
-        self.filetypes = ['c', 'cpp', 'objc', 'objc++', 'cuda', 'arduino']
+        self.filetypes = ['c', 'cpp', 'cuda', 'arduino']
         self.input_pattern = (
             r'[^.\s\t\d\n_]\.\w*|'
             r'[^.\s\t\d\n_]->\w*|'
@@ -77,8 +77,6 @@ class Source(Base):
         # make it a cpp
         if context['filetype'] not in ['c', 'cpp', 'objc']:
             buffer_name += '.cpp'
-        elif not context['bufname'].endswith('.' + context['filetype']):
-            buffer_name = buffer_name + '.' + context['filetype']
         return os.path.join(context['cwd'], buffer_name)
 
 
@@ -88,14 +86,14 @@ class Source(Base):
 
         # add default library for arduino
         if context['bufname'].endswith('.ino'):
-            arduino = re.compile(r'\s*#include\s<Arduino.h>')
+            arduino = re.compile(r'\s*#include\s*<Arduino.h>')
             if not arduino.findall(content):
                 content = '#include <Arduino.h>\n' + content
         elif context['bufname'].endswith('.cu'):
-            arduino = re.compile(r'\s*#include\s<cuda_runtime_api.h>')
-            if not arduino.findall(content):
-                content = '#include <cuda_runtime_api.h>\n' + content
+            cuda = re.compile(r'\s*#include\s*<cuda_runtime_api.h>')
+            if not cuda.findall(content):
                 content = '#include <cuda.h>\n' + content
+                content = '#include <cuda_runtime_api.h>\n' + content
 
         self._file_cache[filepath] = content
 
@@ -257,12 +255,14 @@ class Source(Base):
         column = position[1]
         delimiter = ['->', '.', '::']
         first = max([line.rfind(d, 0, column-1) for d in delimiter])
-        fileid = os.path.join(context['cwd'], context['bufname']) + ':'
+        fileid = os.path.join(context['cwd'],
+            self._get_buffer_name(context)) + ':'
 
+        # if no delimiter is found try to find the function name
         if first < 0:
             # find the closest function name to current position
-            function_name = re.compile(r'\s*([\w\d])\s*\([^\(&^\)]*\)\s*{')
-            content = '\n'.join(self.vim.current.buffer[:position[0]])
+            function_name = re.compile(r'\s*([\w\d]*)\s*\([^\(&^\)]*\)\s*\n*{')
+            content = '\n'.join(self.vim.current.buffer[0:position[0]])
             target = function_name.findall(content)
             if target:
                 return fileid + target[-1]
