@@ -6,11 +6,11 @@ let g:loaded_deoplete_cpp = 1
 " flags
 let g:deoplete#sources#cpp#cflags =
 \   get(g:, 'deoplete#sources#cpp#cflags',
-\   ['-std=c11', '-Wall', '-Wextra'])
+\   ['-std=c89'])
 
 let g:deoplete#sources#cpp#cppflags =
 \   get(g:, 'deoplete#sources#cpp#cppflags',
-\   ['-std=c++11', '-Wall', '-Wextra'])
+\   ['-std=c++98'])
 
 let g:deoplete#sources#cpp#objcflags =
 \   get(g:, 'deoplete#sources#cpp#objcflags',
