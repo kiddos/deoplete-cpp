@@ -10,7 +10,7 @@ I made this source using libclang. I am using version 3.6 on my labtop.
 
 ``` shell
 sudo apt-get install libclang-3.6-dev
-sudo pip3 install libclang==3.6
+sudo pip3 install libclang-py3==3.6
 ```
 
 ##Support
@@ -23,10 +23,10 @@ Note: objc and objcpp are a little weird now, so I temporary disable it
 * set the compilation flags
 
 ``` vim
-let g:deoplete#sources#cpp#cflags = ['-std=c11', '-Wall', '-Wextra']
+let g:deoplete#sources#cpp#cflags = ['-std=c89', '-Wall', '-Wextra']
 let g:deoplete#sources#cpp#cppflags = ['-std=c++11', '-Wall', '-Wextra']
-let g:deoplete#sources#cpp#objcflags = ['-std=c++11', '-Wall', '-Wextra']
-let g:deoplete#sources#cpp#objcppflags = ['-std=c++11', '-Wall', '-Wextra']
+let g:deoplete#sources#cpp#objcflags = ['-Wall', '-Wextra']
+let g:deoplete#sources#cpp#objcppflags = ['-Wall', '-Wextra']
 ```
 * set the compilation include flags
 
