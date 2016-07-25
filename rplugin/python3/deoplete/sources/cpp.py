@@ -13,7 +13,7 @@ class Source(Base):
         self.mark = '[cpp]'
         self.rank = 600
         self.debug_enabled = False
-        self.filetypes = ['c', 'cpp', 'cuda', 'arduino']
+        self.filetypes = ['c', 'cpp', 'objc', 'objcpp', 'cuda', 'arduino']
         self.input_pattern = (
             r'[^.\s\t\d\n_]\.\w*|'
             r'[^.\s\t\d\n_]->\w*|'
@@ -52,6 +52,9 @@ class Source(Base):
         self._cuda_path = \
             self.vim.vars['deoplete#sources#cpp#cuda_path']
 
+        # delimiter
+        self._delimiter = ['.', '->', '::']
+
         # cache
         self._file_cache = {}
         self._translation_unit_cache = {}
@@ -75,7 +78,7 @@ class Source(Base):
         buffer_name = context['bufname']
         # if the filetype is not supported by clang
         # make it a cpp
-        if context['filetype'] not in ['c', 'cpp', 'objc']:
+        if context['filetype'] not in ['c', 'cpp', 'objc', 'objcpp']:
             buffer_name += '.cpp'
         return os.path.join(context['cwd'], buffer_name)
 
@@ -94,7 +97,6 @@ class Source(Base):
             if not cuda.findall(content):
                 content = '#include <cuda.h>\n' + content
                 content = '#include <cuda_runtime_api.h>\n' + content
-
         self._file_cache[filepath] = content
 
 
@@ -131,9 +133,8 @@ class Source(Base):
 
 
     def _get_closest_delimiter(self, context):
-        delimiter = ['.', '->', '::']
         current_line = self.vim.current.buffer[context['position'][1]-1]
-        return max([current_line.rfind(d) + len(d) for d in delimiter])
+        return max([current_line.rfind(d) + len(d) for d in self._delimiter])
 
 
     def _get_completion_position(self, context):
@@ -253,8 +254,7 @@ class Source(Base):
     def _get_current_cache_key(self, context, position):
         line = self.vim.current.buffer[position[0]-1]
         column = position[1]
-        delimiter = ['->', '.', '::']
-        first = max([line.rfind(d, 0, column-1) for d in delimiter])
+        first = max([line.rfind(d, 0, column-1) for d in self._delimiter])
         fileid = os.path.join(context['cwd'],
             self._get_buffer_name(context)) + ':'
 
@@ -270,7 +270,7 @@ class Source(Base):
                 return fileid + 'line' + str(position[0])
 
         # try to find the second delimiter
-        second = max([line.rfind(d, 0, first-1) for d in delimiter])
+        second = max([line.rfind(d, 0, first-1) for d in self._delimiter])
         if second < 0:
             return fileid + line[0:first].strip()
         else:
