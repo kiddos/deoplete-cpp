@@ -100,21 +100,7 @@ class Source(Base):
         self._file_cache[filepath] = content
 
 
-    def on_event(self, context):
-        # change input pattern
-        if context['filetype'] == 'c':
-            self.input_pattern = (
-                r'[^.\s\t\d\n_]\.\w*|'
-                r'[^.\s\t\d\n_]->\w*')
-        else:
-            self.input_pattern = (
-                r'[^.\s\t\d\n_]\.\w*|'
-                r'[^.\s\t\d\n_]->\w*|'
-                r'[\w\d]::\w*')
-
-        # cache the file
-        self._update_file_cache(context)
-
+    def _setup_completion_cache(self, context):
         # setup completion cache
         if not self._result_cache:
             # parse if not yet been parse
@@ -130,6 +116,29 @@ class Source(Base):
                     keys_to_remove.append(key)
             for key in keys_to_remove:
                 self._result_cache.pop(key, None)
+
+
+    def on_init(self, context):
+        self._update_file_cache(context)
+        self._setup_completion_cache(context)
+
+
+    def on_event(self, context):
+        # change input pattern
+        if context['filetype'] == 'c':
+            self.input_pattern = (
+                r'[^.\s\t\d\n_]\.\w*|'
+                r'[^.\s\t\d\n_]->\w*')
+        else:
+            self.input_pattern = (
+                r'[^.\s\t\d\n_]\.\w*|'
+                r'[^.\s\t\d\n_]->\w*|'
+                r'[\w\d]::\w*')
+
+        # cache the file
+        self._update_file_cache(context)
+        self._setup_completion_cache(context)
+
 
 
     def _get_closest_delimiter(self, context):
