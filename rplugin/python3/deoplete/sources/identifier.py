@@ -7,7 +7,7 @@ class Source(Base):
 
         self.name = 'identifier'
         self.mark = '[I]'
-        self.rank = 300
+        self.rank = 100
         self.debug_enabled = False
         self._cache = []
 
