@@ -1,0 +1,17 @@
+language: python
+
+sudo: required
+dist: trusty
+
+before_install:
+  - sudo apt-get update
+
+install:
+  - sudo apt-get install python3
+  - sudo apt-get install python3-pip
+  - sudo apt-get install clang libclang-3.4-dev
+  - sudo pip3 install -U pip
+  - sudo pip install neovim libclang-py3==3.4.0
+
+script:
+  - ./run_test.sh
