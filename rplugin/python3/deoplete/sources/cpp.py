@@ -154,16 +154,16 @@ class Source(Base):
         # setup flags
         flags = []
         if context['filetype'] == 'c':
-            flags = self._cflags
+            flags = ['-x', 'c'] + self._cflags
         elif context['filetype'] == 'cpp':
-            flags = self._cppflags
+            flags = ['-x', 'c++'] + self._cppflags
         elif context['filetype'] == 'objc':
-            flags = self._objcflags
+            flags = ['-x', 'objective-c'] + self._objcflags
         elif context['filetype'] == 'objcpp':
-            flags = self._objcppflags
+            flags = ['-x', 'objective-c++'] + self._objcppflags
         else:
             # default to cpp flag if filetype not known
-            flags = self._cppflags
+            flags = ['-x', 'c++'] + self._cppflags
 
         # set up include path flags
         include_flags = self._cpp_include_path
