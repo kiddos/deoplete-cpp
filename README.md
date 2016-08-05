@@ -1,5 +1,6 @@
 deoplete-cpp
 ============
+[![Build Status](https://travis-ci.org/kiddos/deoplete-cpp.svg?branch=master)](https://travis-ci.org/kiddos/deoplete-cpp)
 
 c, c++, objc, objc++, arduino, cmake source for [deoplete.nvim](https://github.com/Shougo/deoplete.nvim)
 
