@@ -10,9 +10,9 @@ install:
   - sudo apt-get install python3
   - sudo apt-get install python3-pip -y
   - sudo apt-get install clang libclang-3.4-dev -y
-  - sudo apt-get install python-clang-3.4 -y
-  - sudo pip3 install -U pip egg
+  - sudo pip3 install -U pip
   - sudo pip3 install neovim libclang-py3==3.4.0
+  - sudo export PYTHONPATH=/usr/lib/python3/dist-packages:/usr/local/lib/python3.4/dist-packages
 
 script:
   - ./run_test.sh
