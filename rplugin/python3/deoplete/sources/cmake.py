@@ -27,12 +27,12 @@ class Source(Base):
 
     def _gather_commands(self):
         help_text= self._get_command_help_text('cmake --help-commands')
-        regex = re.compile(r'\s([\w\d]+\([\[\]\<\>\w\d\s.]*\))')
+        regex = re.compile(r'\s([\w\d]+\s*\([^)]*?\))')
         commands = regex.findall(help_text)
         for command in commands:
             name = command.split('(')[0]
             if name not in self._commands:
-                regex = re.compile(r'\(([\[\]\<\>\w\d\s.]*)\)')
+                regex = re.compile(r'\(([^)]*?)\)')
                 args = regex.findall(command)[0]
                 self._commands[name] = ' '.join(args.replace('\n', ' ').split())
 
