@@ -18,10 +18,12 @@ class Source(Base):
         self._gather_commands()
         self._gather_variables()
 
+
     def _get_command_help_text(self, command):
         p = subprocess.Popen(command, shell=True,
                 stdout=subprocess.PIPE)
         return str(p.stdout.read()).replace('\\n', '\n')
+
 
     def _gather_commands(self):
         help_text= self._get_command_help_text('cmake --help-commands')
@@ -34,6 +36,7 @@ class Source(Base):
                 args = regex.findall(command)[0]
                 self._commands[name] = ' '.join(args.replace('\n', ' ').split())
 
+
     def _gather_variables(self):
         help_text = self._get_command_help_text('cmake --help-variable-list')
         language_keyword = ['C', 'CXX', 'FORTRAN', 'JAVA', 'PYTHON']
@@ -45,12 +48,15 @@ class Source(Base):
             elif variable not in self._variables:
                 self._variables.append(variable)
 
+
     def _gather_identifier(self):
         regex = re.compile(r'\s*set\(([\w\d]+)[\w\d\s./]*\)')
         self._identifiers = regex.findall('\n'.join(self.vim.current.buffer))
 
+
     def on_event(self, context):
         self._gather_identifier()
+
 
     def gather_candidates(self, context):
         self._gather_identifier()
