@@ -68,24 +68,30 @@ class Source(Base):
 
     def _search_for_libclang(self):
         self._library_found = False
-        target = 'libclang.so'
+        target = re.compile(r'(libclang\.so).*')
         possible = [
             '/usr/lib/llvm-3.8/lib',
             '/usr/lib/llvm-3.7/lib',
             '/usr/lib/llvm-3.6/lib',
             '/usr/lib/llvm-3.5/lib',
             '/usr/lib/llvm-3.4/lib',
+            # opensuse
+            '/usr/lib64/'
+            '/usr/lib/'
+            # others
             '/usr/local/lib',
             '/usr/lib',
             '/usr/lib/x86_64-linux-gnu'
         ]
         for path in possible:
             if os.path.isdir(path):
-                if target in os.listdir(path):
-                    conf.set_compatibility_check(False)
-                    conf.set_library_file(os.path.join(path, target))
-                    self._library_found = True
-                    break
+                for library in os.listdir(path):
+                    targetlib = target.findall(library)
+                    if targetlib:
+                        conf.set_compatibility_check(False)
+                        conf.set_library_file(os.path.join(path, targetlib[0]))
+                        self._library_found = True
+                        break
 
 
     def _setup_arduino_path(self):
