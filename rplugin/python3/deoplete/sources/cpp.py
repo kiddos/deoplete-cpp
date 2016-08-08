@@ -75,12 +75,9 @@ class Source(Base):
             '/usr/lib/llvm-3.6/lib',
             '/usr/lib/llvm-3.5/lib',
             '/usr/lib/llvm-3.4/lib',
-            # opensuse
-            '/usr/lib64/'
-            '/usr/lib/'
-            # others
-            '/usr/local/lib',
+            '/usr/lib64',
             '/usr/lib',
+            '/usr/local/lib',
             '/usr/lib/x86_64-linux-gnu'
         ]
         for path in possible:
