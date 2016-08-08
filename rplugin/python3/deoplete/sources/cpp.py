@@ -89,7 +89,7 @@ class Source(Base):
                     targetlib = target.findall(library)
                     if targetlib:
                         conf.set_compatibility_check(False)
-                        conf.set_library_file(os.path.join(path, targetlib[0]))
+                        conf.set_library_file(os.path.join(path, library))
                         self._library_found = True
                         break
 
