@@ -2,6 +2,7 @@ from .base import Base
 import os
 import re
 from clang.cindex import TranslationUnit as tu
+from clang.cindex import Config as conf
 import traceback
 
 class Source(Base):
@@ -60,6 +61,31 @@ class Source(Base):
         self._translation_unit_cache = {}
         self._position_cache = {}
         self._result_cache = {}
+
+        # seach for libclang
+        self._search_for_libclang()
+
+
+    def _search_for_libclang(self):
+        self._library_found = False
+        target = 'libclang.so'
+        possible = [
+            '/usr/lib/llvm-3.8/lib',
+            '/usr/lib/llvm-3.7/lib',
+            '/usr/lib/llvm-3.6/lib',
+            '/usr/lib/llvm-3.5/lib',
+            '/usr/lib/llvm-3.4/lib',
+            '/usr/local/lib',
+            '/usr/lib',
+            '/usr/lib/x86_64-linux-gnu'
+        ]
+        for path in possible:
+            if os.path.isdir(path):
+                if target in os.listdir(path):
+                    conf.set_compatibility_check(False)
+                    conf.set_library_file(os.path.join(path, target))
+                    self._library_found = True
+                    break
 
 
     def _setup_arduino_path(self):
@@ -185,6 +211,9 @@ class Source(Base):
 
 
     def _get_completion_result(self, context, filepath, position):
+        if not self._library_found:
+            return ''
+
         # get flags and files
         flags = self._get_completion_flags(context)
         all_files = [(f, self._file_cache[f]) for f in self._file_cache]
