@@ -85,8 +85,9 @@ class Source(Base):
                 for library in os.listdir(path):
                     targetlib = target.findall(library)
                     if targetlib:
-                        conf.set_compatibility_check(False)
+                        conf.loaded = False
                         conf.set_library_file(os.path.join(path, library))
+                        conf.set_compatibility_check(False)
                         self._library_found = True
                         break
 
@@ -100,7 +101,7 @@ class Source(Base):
             self._arduino_include_path += [arduino_core] + \
                 [os.path.join(arduino_library, lib)
                  for lib in os.listdir(arduino_library)
-                 if os.path.isdir(lib)]
+                 if os.path.isdir(os.path.join(arduino_library, lib))]
 
 
     def _get_buffer_name(self, context):
