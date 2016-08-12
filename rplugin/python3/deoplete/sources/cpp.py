@@ -149,11 +149,6 @@ class Source(Base):
 
 
     def on_init(self, context):
-        self._update_file_cache(context)
-        self._setup_completion_cache(context)
-
-
-    def on_event(self, context):
         # change input pattern
         if context['filetype'] == 'c':
             self.input_pattern = (
@@ -169,6 +164,9 @@ class Source(Base):
         self._update_file_cache(context)
         self._setup_completion_cache(context)
 
+
+    def on_event(self, context):
+        self.on_init(context)
 
 
     def _get_closest_delimiter(self, context):
