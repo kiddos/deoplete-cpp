@@ -2,7 +2,7 @@
 
 set -e
 
-PY=python
+PY=python3
 TEST_CODE_COMPLETION=test/test_code_complete.py
 TEST_C=test/test.c
 TEST_CPP=test/test.cpp

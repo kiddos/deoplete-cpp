@@ -3,7 +3,7 @@ language: python
 sudo: required
 os: linux
 dist: trusty
-python: "2.7"
+python: "3.4"
 
 before_install:
   - sudo apt-get update
