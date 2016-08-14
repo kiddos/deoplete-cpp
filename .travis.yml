@@ -1,6 +1,7 @@
 language: python
 
 sudo: required
+os: linux
 dist: trusty
 python: "2.7"
 
@@ -14,4 +15,4 @@ install:
   - sudo pip3 install -r test/requirements.txt
 
 script:
-  - ./run_test.sh
+  - sudo ./run_test.sh
