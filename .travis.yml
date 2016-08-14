@@ -2,11 +2,10 @@ language: python
 
 sudo: required
 dist: trusty
-python: "3.4"
+python: "2.7"
 
 before_install:
   - sudo apt-get update
-  - export PYTHONPATH=/usr/lib/python3/dist-packages:/usr/local/lib/python3.4/dist-packages
 
 install:
   - sudo apt-get install clang libclang-3.4-dev python-clang-3.4 -y
