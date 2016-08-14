@@ -1,0 +1,2 @@
+neovim
+libclang-py3==3.4
