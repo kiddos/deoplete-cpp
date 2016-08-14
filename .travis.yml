@@ -9,8 +9,8 @@ before_install:
 
 install:
   - sudo apt-get install clang libclang-3.4-dev -y
-  - pip3 install -U --user pip
-  - pip3 install -r --user test/requirements.txt
+  - sudo pip3 install -U pip
+  - sudo install -r test/requirements.txt
 
 script:
   - pip3 list | grep libclang
