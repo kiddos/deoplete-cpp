@@ -2,17 +2,16 @@ language: python
 
 sudo: required
 dist: trusty
+python: "3.4"
 
 before_install:
   - sudo apt-get update
 
 install:
-  - sudo apt-get install python3
-  - sudo apt-get install python3-pip -y
   - sudo apt-get install clang libclang-3.4-dev -y
-  - sudo pip3 install -U pip
-  - sudo pip3 install neovim libclang-py3==3.4.0
-  - export PYTHONPATH=$PYTHONPATH:/usr/lib/python3/dist-packages:/usr/local/lib/python3.4/dist-packages
+  - pip3 install -U --user pip
+  - pip3 install -r --user test/requirements.txt
 
 script:
+  - pip3 list | grep libclang
   - ./run_test.sh
