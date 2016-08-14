@@ -10,6 +10,8 @@ before_install:
 
 install:
   - sudo apt-get install clang libclang-3.4-dev python-clang-3.4 -y
+  - sudo apt-get install python3-pip
+  - sudo pip3 install -U pip
   - sudo pip3 install -r test/requirements.txt
 
 script:
