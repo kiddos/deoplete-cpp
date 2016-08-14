@@ -6,6 +6,7 @@ python: "3.4"
 
 before_install:
   - sudo apt-get update
+  - export PYTHONPATH=/usr/lib/python3/dist-packages:/usr/local/lib/python3.4/dist-packages
 
 install:
   - sudo apt-get install clang libclang-3.4-dev -y
@@ -13,5 +14,4 @@ install:
   - sudo pip install -r test/requirements.txt
 
 script:
-  - pip list | grep libclang
   - ./run_test.sh
