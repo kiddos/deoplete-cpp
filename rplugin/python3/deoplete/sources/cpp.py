@@ -11,7 +11,7 @@ class Source(Base):
 
         self.vim = vim
         self.name = 'cpp'
-        self.mark = '[cpp]'
+        self.mark = '[c++]'
         self.rank = 600
         self.debug_enabled = False
         self.filetypes = ['c', 'cpp', 'objc', 'objcpp', 'cuda', 'arduino']
