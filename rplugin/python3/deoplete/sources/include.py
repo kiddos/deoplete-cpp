@@ -13,7 +13,7 @@ class Source(Base):
         self.rank = 600
         self.debug_enable = False
         self.filetypes = ['c', 'cpp', 'objc', 'objcpp', 'cuda', 'arduino']
-        self.input_pattern = (r'\s*#include\s*<[^>]*')
+        self.input_pattern = (r'\s*#include\s*<[^>]*|\s*#include\s*"[^"]*')
 
         self.default_path = [
             '/usr/include'
@@ -34,7 +34,7 @@ class Source(Base):
 
 
     def _get_include_completion(self, context):
-        pattern = re.compile(r'\s*#include\s*<([^>]*)')
+        pattern = re.compile(r'\s*#include\s*[<"]([^>^"]*)')
         result = pattern.findall(context['input'])
         if result:
             # get the corresponding paths for different filetype
@@ -59,6 +59,8 @@ class Source(Base):
                 return all_paths
             else:
                 start = result[0].rfind('<') + 1
+                if not start:
+                    start = result[0].rfind('"') + 1
                 folder = result[0][start:complete_path]
                 all_paths = []
                 for path in paths:
@@ -70,7 +72,7 @@ class Source(Base):
 
 
     def get_complete_position(self, context):
-        m = re.search(r'[</.]$', context['input'])
+        m = re.search(r'[</"]$', context['input'])
         return m.end() if m else -1
 
 
