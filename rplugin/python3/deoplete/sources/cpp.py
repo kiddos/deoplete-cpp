@@ -89,7 +89,7 @@ class Source(Base):
                         conf.set_library_file(os.path.join(path, library))
                         conf.set_compatibility_check(False)
                         self._library_found = True
-                        break
+                        return
 
 
     def _setup_arduino_path(self):
