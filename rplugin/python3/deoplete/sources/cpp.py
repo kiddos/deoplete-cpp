@@ -70,10 +70,8 @@ class Source(Base):
         self._library_found = False
         target = re.compile(r'(libclang\.so).*')
         possible = [
-            '/usr/lib/llvm-3.8/lib',
-            '/usr/lib/llvm-3.7/lib',
             '/usr/lib/llvm-3.6/lib',
-            '/usr/lib/llvm-3.5/lib',
+            '/usr/lib/llvm-3.8/lib',
             '/usr/lib/llvm-3.4/lib',
             '/usr/lib64',
             '/usr/lib',
