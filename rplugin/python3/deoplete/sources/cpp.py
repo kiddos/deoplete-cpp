@@ -1,9 +1,14 @@
 from .base import Base
 import os
 import re
+import traceback
 from clang.cindex import TranslationUnit as tu
 from clang.cindex import Config as conf
-import traceback
+from deoplete.util import load_external_module
+
+load_external_module(__file__, 'sources/clang_util')
+import clang_util
+
 
 class Source(Base):
     def __init__(self, vim):
@@ -63,31 +68,7 @@ class Source(Base):
         self._result_cache = {}
 
         # seach for libclang
-        self._search_for_libclang()
-
-
-    def _search_for_libclang(self):
-        self._library_found = False
-        target = re.compile(r'(libclang\.so).*')
-        possible = [
-            '/usr/lib/llvm-3.6/lib',
-            '/usr/lib/llvm-3.8/lib',
-            '/usr/lib/llvm-3.4/lib',
-            '/usr/lib64',
-            '/usr/lib',
-            '/usr/local/lib',
-            '/usr/lib/x86_64-linux-gnu'
-        ]
-        for path in possible:
-            if os.path.isdir(path):
-                for library in os.listdir(path):
-                    targetlib = target.findall(library)
-                    if targetlib:
-                        conf.loaded = False
-                        conf.set_library_file(os.path.join(path, library))
-                        conf.set_compatibility_check(False)
-                        self._library_found = True
-                        return
+        self._library_found = clang_util.setup_libclang(conf, '3.6')
 
 
     def _setup_arduino_path(self):
