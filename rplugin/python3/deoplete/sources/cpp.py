@@ -8,6 +8,7 @@ from deoplete.util import load_external_module
 
 load_external_module(__file__, 'sources/clang_util')
 import clang_util
+from clang_util import setup_libclang, get_buffer_name
 
 
 class Source(Base):
@@ -58,9 +59,6 @@ class Source(Base):
         self._cuda_path = \
             self.vim.vars['deoplete#sources#cpp#cuda_path']
 
-        # delimiter
-        self._delimiter = ['.', '->', '::']
-
         # cache
         self._file_cache = {}
         self._translation_unit_cache = {}
@@ -68,7 +66,7 @@ class Source(Base):
         self._result_cache = {}
 
         # seach for libclang
-        self._library_found = clang_util.setup_libclang(conf, '3.6')
+        self._library_found = setup_libclang(conf, '3.6')
 
 
     def _setup_arduino_path(self):
@@ -83,17 +81,8 @@ class Source(Base):
                  if os.path.isdir(os.path.join(arduino_library, lib))]
 
 
-    def _get_buffer_name(self, context):
-        buffer_name = context['bufname']
-        # if the filetype is not supported by clang
-        # make it a cpp
-        if context['filetype'] not in ['c', 'cpp', 'objc', 'objcpp']:
-            buffer_name += '.cpp'
-        return os.path.join(context['cwd'], buffer_name)
-
-
     def _update_file_cache(self, context):
-        filepath = self._get_buffer_name(context)
+        filepath = get_buffer_name(context)
         content = '\n'.join(self.vim.current.buffer)
 
         # add default library for arduino
@@ -118,7 +107,7 @@ class Source(Base):
             self._gather_completion(context, position, cache_key)
         else:
             # remove old result
-            filepath = self._get_buffer_name(context)
+            filepath = get_buffer_name(context)
             keys_to_remove = []
             for key in self._result_cache:
                 if key.startswith(filepath):
@@ -128,16 +117,19 @@ class Source(Base):
 
 
     def on_init(self, context):
-        # change input pattern
+        self._delimiter = ['.', '->', '::']
+
         if context['filetype'] == 'c':
             self.input_pattern = (
                 r'[^.\s\t\d\n_]\.\w*|'
                 r'[^.\s\t\d\n_]->\w*')
+            self._delimiter = ['.', '->']
         else:
             self.input_pattern = (
                 r'[^.\s\t\d\n_]\.\w*|'
                 r'[^.\s\t\d\n_]->\w*|'
                 r'[\w\d]::\w*')
+
 
         # cache the file
         self._update_file_cache(context)
@@ -275,7 +267,7 @@ class Source(Base):
         column = position[1]
         first = max([line.rfind(d, 0, column-1) for d in self._delimiter])
         fileid = os.path.join(context['cwd'],
-            self._get_buffer_name(context)) + ':'
+            get_buffer_name(context)) + ':'
 
         # if no delimiter is found try to find the function name
         if first < 0:
@@ -298,7 +290,7 @@ class Source(Base):
 
     def _gather_completion(self, context, position, key):
         try:
-            buffer_name = self._get_buffer_name(context)
+            buffer_name = get_buffer_name(context)
             completion_result = \
                 self._get_completion_result(context, buffer_name, position)
             parsed_result = \

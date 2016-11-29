@@ -2,7 +2,10 @@
 
 from __future__ import print_function
 from clang.cindex import Config as conf
+from clang.cindex import TranslationUnit as tu
 import subprocess
+import os
+import re
 
 
 def setup_libclang(config, version):
@@ -27,8 +30,16 @@ def setup_libclang(config, version):
     return False
 
 
+def get_buffer_name(context):
+        buffer_name = context['bufname']
+        # if the filetype is not supported by clang, make it a cpp
+        if context['filetype'] not in ['c', 'cpp', 'objc', 'objcpp']:
+            buffer_name += '.cpp'
+        return os.path.join(context['cwd'], buffer_name)
+
+
 def main():
-    setup_libclang(conf, '3.6')
+    setup_libclang(conf, '3.8')
 
 
 if __name__ == '__main__':
