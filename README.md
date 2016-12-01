@@ -5,20 +5,27 @@ deoplete-cpp
 c, c++, objc, objc++, arduino, cmake source for [deoplete.nvim](https://github.com/Shougo/deoplete.nvim)
 
 ##Installation
-I made this source using libclang. I am using version 3.6 on my labtop.
+I made this source using libclang. I am using version 3.8 on my labtop.
 - install libclang
 - install python3 port libclang
 
-``` shell
-sudo apt-get install libclang-3.6-dev
-sudo pip3 install libclang-py3==3.6
-```
+  * clang 3.6
+
+  ``` shell
+  sudo apt-get install libclang-3.6-dev
+  sudo pip3 install libclang-py3==3.6
+  ```
+
+  * clang 3.8
+
+  ``` shell
+  sudo apt-get install libclang-3.8-dev
+  sudo pip3 install libclang-py3==3.8
+  ```
 
 ##Support
 * cmake (you need to install cmake to for this to work)
 * arduino (you need to have the [Arduino IDE](https://www.arduino.cc/en/Main/Software))
-
-Note: objc and objcpp are a little weird now, so I temporary disable it
 
 ##Options
 * set the compilation flags
