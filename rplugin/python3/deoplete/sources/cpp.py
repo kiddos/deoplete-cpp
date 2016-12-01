@@ -8,10 +8,11 @@ from deoplete.util import load_external_module
 
 load_external_module(__file__, 'sources/clang_util')
 import clang_util
-from clang_util import setup_libclang, get_buffer_name
+from clang_util import setup_libclang, get_buffer_name, \
+    parse_raw_result, get_candidates, ClangCompletion
 
 
-class Source(Base):
+class Source(Base, ClangCompletion):
     def __init__(self, vim):
         Base.__init__(self, vim)
 
@@ -218,50 +219,6 @@ class Source(Base):
             return result
 
 
-    def _parse_completion_result(self, result, key):
-        pattern = re.compile(key + r':\s(.*?)(\s\||$)')
-        match = pattern.findall(result)
-        if match:
-            return match[0][0]
-
-        pattern = re.compile(r'\'([^\']*?)\',\s' + key)
-        match = pattern.findall(result)
-        if match:
-            return ','.join(match)
-        else:
-            return ''
-
-
-    def _get_parsed_completion_result(self, completion_result):
-        parsed_result = []
-        for result in completion_result.results:
-            try:
-                r = str(result)
-                parsed_result.append({
-                    'TypedText':
-                        self._parse_completion_result(r, 'TypedText'),
-                    'ResultType':
-                        self._parse_completion_result(r, 'ResultType'),
-                    'Availability':
-                        self._parse_completion_result(r, 'Availability'),
-                    'Priority':
-                        int(self._parse_completion_result(r, 'Priority')),
-                    'Brief comment':
-                        self._parse_completion_result(r, 'Brief comment'),
-                    'LeftParen':
-                        self._parse_completion_result(r, 'LeftParen'),
-                    'RightParen':
-                        self._parse_completion_result(r, 'RightParen'),
-                    'Placeholder':
-                        self._parse_completion_result(r, 'Placeholder'),
-                    'Informative':
-                        self._parse_completion_result(r, 'Informative'),
-                })
-            except:
-                continue
-        return parsed_result
-
-
     def _get_current_cache_key(self, context, position):
         line = self.vim.current.buffer[position[0]-1]
         column = position[1]
@@ -291,25 +248,15 @@ class Source(Base):
     def _gather_completion(self, context, position, key):
         try:
             buffer_name = get_buffer_name(context)
-            completion_result = \
+            raw_result = \
                 self._get_completion_result(context, buffer_name, position)
-            parsed_result = \
-                self._get_parsed_completion_result(completion_result)
+            parsed_result = parse_raw_result(raw_result)
+                #  self._get_parsed_completion_result(completion_result)
             self._result_cache[key] = parsed_result
             self._position_cache[key] = position
             return parsed_result
         except:
             return []
-
-
-    def _get_candidates(self, parsed_result):
-        candidates = []
-        for pr in parsed_result:
-            candidate = {'word': pr['TypedText'],
-                         'kind': pr['Placeholder'],
-                         'menu': pr['ResultType']}
-            candidates.append(candidate)
-        return candidates
 
 
     def get_complete_position(self, context):
@@ -330,4 +277,4 @@ class Source(Base):
                                                     cache_key)
         else:
             parsed_result = self._result_cache[cache_key]
-        return self._get_candidates(parsed_result)
+        return get_candidates(parsed_result)
