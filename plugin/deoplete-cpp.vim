@@ -51,3 +51,8 @@ let g:deoplete#sources#cpp#cuda_path =
 let g:deoplete#sources#cpp#get_detail =
 \   get(g:, 'deoplete#sources#cpp#get_detail',
 \   1)
+
+" complete paren
+let g:deoplete#sources#cpp#complete_paren =
+\   get(g:, 'deoplete#sources#cpp#complete_paren',
+\   0)
