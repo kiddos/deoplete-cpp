@@ -60,13 +60,15 @@ def parse_raw_result(raw_result):
         try:
             r = str(result)
             parsed_result.append({
-                'TypedText': get_value(r, 'TypedText'),
                 'ResultType': get_value(r, 'ResultType'),
+                'TypedText': get_value(r, 'TypedText'),
+                'LeftAngle': get_value(r, 'LeftAngle'),
+                'RightAngle': get_value(r, 'RightAngle'),
+                'LeftParen': get_value(r, 'LeftParen'),
+                'RightParen': get_value(r, 'RightParen'),
                 'Availability': get_value(r, 'Availability'),
                 'Priority': int(get_value(r, 'Priority')),
                 'Brief comment': get_value(r, 'Brief comment'),
-                'LeftParen': get_value(r, 'LeftParen'),
-                'RightParen': get_value(r, 'RightParen'),
                 'Placeholder': get_value(r, 'Placeholder'),
                 'Informative': get_value(r, 'Informative'),
             })
@@ -75,12 +77,19 @@ def parse_raw_result(raw_result):
     return parsed_result
 
 
-def get_candidates(parsed_result):
+def get_candidates(parsed_result, include_paren=False):
     candidates = []
     for pr in parsed_result:
-        candidate = {'word': pr['TypedText'],
-                        'kind': pr['Placeholder'],
-                        'menu': pr['ResultType']}
+        if include_paren:
+            word = pr['TypedText'] + pr['LeftAngle'] + pr['RightAngle'] + \
+                pr['LeftParen'] + pr['RightParen']
+            candidate = {'word': word,
+                            'kind': pr['Placeholder'],
+                            'menu': pr['ResultType']}
+        else:
+            candidate = {'word': pr['TypedText'],
+                            'kind': pr['Placeholder'],
+                            'menu': pr['ResultType']}
         candidates.append(candidate)
     return candidates
 
@@ -148,6 +157,8 @@ class Source(Base, ClangCompletion):
 
         self._get_detail = \
             self.vim.vars['deoplete#sources#cpp#get_detail']
+        self.complete_paren = \
+            self.vim.vars['deoplete#sources#cpp#complete_paren']
 
         # include flags
         self._cflags = \
@@ -368,7 +379,6 @@ class Source(Base, ClangCompletion):
             raw_result = \
                 self._get_completion_result(context, buffer_name, position)
             parsed_result = parse_raw_result(raw_result)
-                #  self._get_parsed_completion_result(completion_result)
             self._result_cache[key] = parsed_result
             self._position_cache[key] = position
             return parsed_result
@@ -394,7 +404,7 @@ class Source(Base, ClangCompletion):
                                                     cache_key)
         else:
             parsed_result = self._result_cache[cache_key]
-        return get_candidates(parsed_result)
+        return get_candidates(parsed_result, self.complete_paren)
 
 
 def main():
