@@ -51,3 +51,15 @@ I have my Arduino IDE folder in /usr/local/share
 ``` vim
 let g:deoplete#sources#cpp#arduino_path = '/usr/local/share/arduino'
 ```
+
+* display detail
+
+```vim
+let g:deoplete#sources#cpp#get_detail = 1
+```
+
+* complete paren
+
+```vim
+let g:deoplete#sources#cpp#complete_paren = 1
+```
