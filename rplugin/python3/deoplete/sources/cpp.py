@@ -1,7 +1,13 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function
+#  from __future__ import absolute_import
+
+from past import autotranslate
 from .base import Base
+
+autotranslate(['clang'])
+
 from clang.cindex import Config as conf
 from clang.cindex import TranslationUnit as tu
 import subprocess
@@ -195,7 +201,7 @@ class Source(Base, ClangCompletion):
         self._result_cache = {}
 
         # seach for libclang
-        self._library_found = setup_libclang(conf, '3.6')
+        self._library_found = setup_libclang(conf, '5.0')
 
 
     def _setup_arduino_path(self):
