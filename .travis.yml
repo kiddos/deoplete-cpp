@@ -6,6 +6,7 @@ dist: trusty
 python: "3.4"
 
 before_install:
+  - sudo apt-add-repository george-edison55-precise-backports
   - sudo apt-get update
 
 install:
