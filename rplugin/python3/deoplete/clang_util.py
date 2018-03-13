@@ -177,28 +177,8 @@ class ClangCompletion(object):
       return result
 
   def _get_current_cache_key(self, context, position):
-    line = self.vim.current.buffer[position[0]-1]
-    column = position[1]
-    first = max([line.rfind(d, 0, column-1) for d in self._delimiter])
-    fileid = os.path.join(context['cwd'], get_buffer_name(context)) + ':'
-
-    # if no delimiter is found try to find the function name
-    if first < 0:
-      # find the closest function name to current position
-      function_name = re.compile(r'\s*([\w\d]*)\s*\([^\(&^\)]*\)\s*\n*{')
-      content = '\n'.join(self.vim.current.buffer[0:position[0]])
-      target = function_name.findall(content)
-      if target:
-        return fileid + target[-1]
-      else:
-        return fileid + 'line' + str(position[0])
-
-    # try to find the second delimiter
-    second = max([line.rfind(d, 0, first-1) for d in self._delimiter])
-    if second < 0:
-      return fileid + line[0:first].strip()
-    else:
-      return fileid + line[second+1:first].strip()
+    fileid = os.path.join(context['cwd'], get_buffer_name(context))
+    return fileid + ':(%d,%d)' % (position[0], position[1])
 
   def _gather_and_cache_completion(self, context, position, key):
     try:
@@ -210,6 +190,21 @@ class ClangCompletion(object):
       return parsed_result
     except:
       return []
+
+  def _cache_delimiter_completion(self, context):
+    if not hasattr(self, '_delimiter'): return
+
+    for r, lines in enumerate(self.vim.current.buffer):
+      for d in self._delimiter:
+        c = lines.find(d)
+        if c >= 0:
+          position = [r + 1, c + 1]
+          cache_key = self._get_current_cache_key(context, position)
+          self._gather_and_cache_completion(
+            context, position, cache_key)
+    with open('/home/joseph/.vim-log', 'w') as f:
+      f.write(str(self._result_cache))
+
 
   def _get_candidates(self, parsed_result, include_paren=False):
     candidates = []

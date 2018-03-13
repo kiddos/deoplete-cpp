@@ -70,7 +70,10 @@ class Source(Base, ClangCompletion):
 
   def on_event(self, context):
     self._update_file_cache(context)
-    self._setup_completion_cache(context)
+
+    if context['event'] == 'BufWritePost':
+      self._setup_completion_cache(context)
+    self._cache_delimiter_completion(context)
 
     m = re.search(r'\w*$', context['input'])
     return m.start() if m else -1
