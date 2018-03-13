@@ -1,421 +1,89 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function
-#  from __future__ import absolute_import
-
-from past import autotranslate
-from .base import Base
-
-autotranslate(['clang'])
-
-from clang.cindex import Config as conf
-from clang.cindex import TranslationUnit as tu
 import subprocess
 import traceback
 import os
 import re
+import sys
 
+from .base import Base
+from deoplete.util import load_external_module
 
-def setup_libclang(config, version):
-    locate_command = 'ldconfig -p | grep libclang'
-    locations = subprocess.check_output(locate_command, shell=True)
-    locations = locations.decode('ascii').replace('\t', '').split('\n')
+try:
+  current = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+  sys.path.insert(0, current)
 
-    for location in locations:
-        loc = location.split('=>')[-1].strip()
-        if loc.find(version) >= 0:
-            config.loaded = False
-            config.set_library_file(loc)
-            config.set_compatibility_check(False)
-            return True
-
-    if len(locations) > 0:
-        first = locations[0].split('=>')[-1].strip()
-        config.loaded = False
-        config.set_library_file(first)
-        config.set_compatibility_check(False)
-        return True
-    return False
-
-
-def get_buffer_name(context):
-        buffer_name = context['bufname']
-        # if the filetype is not supported by clang, make it a cpp
-        if context['filetype'] not in ['c', 'cpp', 'objc', 'objcpp']:
-            buffer_name += '.cpp'
-        return os.path.join(context['cwd'], buffer_name)
-
-
-def get_value(result, key):
-    pattern = re.compile(key + r':\s(.*?)(\s\||$)')
-    match = pattern.findall(result)
-    if match:
-        return match[0][0]
-
-    pattern = re.compile(r'\'([^\']*?)\',\s' + key)
-    match = pattern.findall(result)
-    if match:
-        return ','.join(match)
-    else:
-        return ''
-
-
-def parse_raw_result(raw_result):
-    parsed_result = []
-    for result in raw_result.results:
-        try:
-            r = str(result)
-            parsed_result.append({
-                'ResultType': get_value(r, 'ResultType'),
-                'TypedText': get_value(r, 'TypedText'),
-                'LeftAngle': get_value(r, 'LeftAngle'),
-                'RightAngle': get_value(r, 'RightAngle'),
-                'LeftParen': get_value(r, 'LeftParen'),
-                'RightParen': get_value(r, 'RightParen'),
-                'Availability': get_value(r, 'Availability'),
-                'Priority': int(get_value(r, 'Priority')),
-                'Brief comment': get_value(r, 'Brief comment'),
-                'Placeholder': get_value(r, 'Placeholder'),
-                'Informative': get_value(r, 'Informative'),
-            })
-        except:
-            continue
-    return parsed_result
-
-
-def get_candidates(parsed_result, include_paren=False):
-    candidates = []
-    for pr in parsed_result:
-        if include_paren:
-            word = pr['TypedText'] + pr['LeftAngle'] + pr['RightAngle'] + \
-                pr['LeftParen'] + pr['RightParen']
-            candidate = {'word': word,
-                            'kind': pr['Placeholder'],
-                            'menu': pr['ResultType']}
-        else:
-            candidate = {'word': pr['TypedText'],
-                            'kind': pr['Placeholder'],
-                            'menu': pr['ResultType']}
-        candidates.append(candidate)
-    return candidates
-
-
-class ClangCompletion():
-    files = {}
-    translation_units = {}
-    positions = {}
-    results = {}
-    delimiter = ['::', '.', '->']
-
-
-    def __init__(self, nvim):
-        self.nvim = nvim
-
-
-    def update_file_cache(self, context):
-        filepath = get_buffer_name(context)
-        content = '\n'.join(self.nvim.current.buffer)
-        self.files[filepath] = content
-        return filepath, content
-
-
-    def prepare_cache_key(self, filepath, position):
-        line = self.nvim.current.buffer[position[0]-1]
-        column = position[1]
-        first = max([line.rfind(d, 0, column-1) for d in self.delimiter])
-        fileid = filepath + ':'
-        content = self.files[filepath][0:position[0]]
-
-        # if no delimiter is found try to find the function name
-        if first < 0:
-            # find the closest function name to current position
-            func_name_pattern = re.compile(r'\s*([\w\d]*)\s*\([^\(&^\)]*\)\s*\n*{')
-            target = func_name_pattern.findall(content)
-            if target:
-                return fileid + target[-1]
-            else:
-                return fileid + 'line' + str(position[0])
-
-        # try to find the second delimiter
-        second = max([line.rfind(d, 0, first-1) for d in self.delimiter])
-        if second < 0:
-            return fileid + line[0:first].strip()
-        else:
-            return fileid + line[second+1:first].strip()
+  from clang_util import ClangCompletion
+except Exception as e:
+  pass
 
 
 class Source(Base, ClangCompletion):
-    def __init__(self, vim):
-        Base.__init__(self, vim)
+  def __init__(self, vim):
+    Base.__init__(self, vim)
+    clang_version = vim.vars['deoplete#sources#cpp#clang_version']
+    ClangCompletion.__init__(self, vim, clang_version)
 
-        self.vim = vim
-        self.name = 'cpp'
-        self.mark = '[c++]'
-        self.rank = 600
-        self.debug_enabled = False
-        self.filetypes = ['c', 'cpp', 'objc', 'objcpp', 'cuda', 'arduino']
-        self.input_pattern = (
-            r'[^.\s\t\d\n_]\.\w*|'
-            r'[^.\s\t\d\n_]->\w*|'
-            r'[\w\d]::\w*')
-        self.max_menu_width = 160
-        self.max_abbr_width = 160
+    self.name = 'cpp'
+    self.mark = '[c++]'
+    self.rank = 600
+    self.debug_enabled = False
+    self.filetypes = ['c', 'cpp', 'objc', 'objcpp']
+    self.max_menu_width = 160
+    self.max_abbr_width = 160
 
-        self._get_detail = \
-            self.vim.vars['deoplete#sources#cpp#get_detail']
-        self.complete_paren = \
-            self.vim.vars['deoplete#sources#cpp#complete_paren']
+    self._init_vars()
 
-        # include flags
-        self._cflags = \
-            self.vim.vars['deoplete#sources#cpp#cflags']
-        self._cppflags = \
-            self.vim.vars['deoplete#sources#cpp#cppflags']
-        self._objcflags = \
-            self.vim.vars['deoplete#sources#cpp#objcflags']
-        self._objcppflags = \
-            self.vim.vars['deoplete#sources#cpp#objcppflags']
+  def _init_vars(self):
+    v = self.vim.vars
+    self._get_detail = v['deoplete#sources#cpp#get_detail']
+    self.complete_paren = v['deoplete#sources#cpp#complete_paren']
 
-        # include path
-        self._c_include_path = \
-            self.vim.vars['deoplete#sources#cpp#c_include_path']
-        self._cpp_include_path = \
-            self.vim.vars['deoplete#sources#cpp#cpp_include_path']
-        self._objc_include_path = \
-            self.vim.vars['deoplete#sources#cpp#objc_include_path']
-        self._objcpp_include_path = \
-            self.vim.vars['deoplete#sources#cpp#objcpp_include_path']
+    # include flags
+    self._cflags = v['deoplete#sources#cpp#cflags']
+    self._cppflags = v['deoplete#sources#cpp#cppflags']
+    self._objcflags = v['deoplete#sources#cpp#objcflags']
+    self._objcppflags = v['deoplete#sources#cpp#objcppflags']
 
-        # arduino path
-        self._arduino_path = \
-            self.vim.vars['deoplete#sources#cpp#arduino_path']
-        self._setup_arduino_path()
-        # cuda path
-        self._cuda_path = \
-            self.vim.vars['deoplete#sources#cpp#cuda_path']
+    # include path
+    self._c_include_path = v['deoplete#sources#cpp#c_include_path']
+    self._cpp_include_path = v['deoplete#sources#cpp#cpp_include_path']
+    self._objc_include_path = v['deoplete#sources#cpp#objc_include_path']
+    self._objcpp_include_path = v['deoplete#sources#cpp#objcpp_include_path']
 
-        # cache
-        self._file_cache = {}
-        self._translation_unit_cache = {}
-        self._position_cache = {}
-        self._result_cache = {}
+  def on_init(self, context):
+    if context['filetype'] == 'c':
+      self.input_pattern = (
+          r'[^.\s\t\d\n_]\.\w*|'
+          r'[^.\s\t\d\n_]->\w*')
+      self._delimiter = ['.', '->']
+    else:
+      self.input_pattern = (
+          r'[^.\s\t\d\n_]\.\w*|'
+          r'[^.\s\t\d\n_]->\w*|'
+          r'[\w\d]::\w*')
+      self._delimiter = ['.', '->', '::']
 
-        # seach for libclang
-        self._library_found = setup_libclang(conf, '5.0')
+    # cache the file
+    self._update_file_cache(context)
+    self._setup_completion_cache(context)
 
+  def on_event(self, context):
+    self._update_file_cache(context)
+    self._setup_completion_cache(context)
 
-    def _setup_arduino_path(self):
-        self._arduino_include_path = []
-        if os.path.isdir(self._arduino_path):
-            arduino_core = os.path.join(self._arduino_path,
-                                        'hardware/arduino/cores/arduino')
-            arduino_library = os.path.join(self._arduino_path, 'libraries')
-            self._arduino_include_path += [arduino_core] + \
-                [os.path.join(arduino_library, lib)
-                 for lib in os.listdir(arduino_library)
-                 if os.path.isdir(os.path.join(arduino_library, lib))]
+    m = re.search(r'\w*$', context['input'])
+    return m.start() if m else -1
 
+  def gather_candidates(self, context):
+    self._update_file_cache(context)
 
-    def _update_file_cache(self, context):
-        filepath = get_buffer_name(context)
-        content = '\n'.join(self.vim.current.buffer)
-
-        # add default library for arduino
-        if context['bufname'].endswith('.ino'):
-            arduino = re.compile(r'\s*#include\s*<Arduino.h>')
-            if not arduino.findall(content):
-                content = '#include <Arduino.h>\n' + content
-        elif context['bufname'].endswith('.cu'):
-            cuda = re.compile(r'\s*#include\s*<cuda_runtime_api.h>')
-            if not cuda.findall(content):
-                content = '#include <cuda.h>\n' + content
-                content = '#include <cuda_runtime_api.h>\n' + content
-        self._file_cache[filepath] = content
-
-
-    def _setup_completion_cache(self, context):
-        # setup completion cache
-        if not self._result_cache:
-            # parse if not yet been parse
-            position = [1, 1]
-            cache_key = self._get_current_cache_key(context, position)
-            self._gather_completion(context, position, cache_key)
-        else:
-            # remove old result
-            filepath = get_buffer_name(context)
-            keys_to_remove = []
-            for key in self._result_cache:
-                if key.startswith(filepath):
-                    keys_to_remove.append(key)
-            for key in keys_to_remove:
-                self._result_cache.pop(key, None)
-
-
-    def on_init(self, context):
-        self._delimiter = ['.', '->', '::']
-
-        if context['filetype'] == 'c':
-            self.input_pattern = (
-                r'[^.\s\t\d\n_]\.\w*|'
-                r'[^.\s\t\d\n_]->\w*')
-            self._delimiter = ['.', '->']
-        else:
-            self.input_pattern = (
-                r'[^.\s\t\d\n_]\.\w*|'
-                r'[^.\s\t\d\n_]->\w*|'
-                r'[\w\d]::\w*')
-
-
-        # cache the file
-        self._update_file_cache(context)
-        self._setup_completion_cache(context)
-
-
-    def on_event(self, context):
-        self.on_init(context)
-
-
-    def _get_closest_delimiter(self, context):
-        current_line = self.vim.current.buffer[context['position'][1]-1]
-        return max([current_line.rfind(d) + len(d) for d in self._delimiter])
-
-
-    def _get_completion_position(self, context):
-        return (context['position'][1], self._get_closest_delimiter(context)+1)
-
-
-    def _get_completion_flags(self, context):
-        # setup flags
-        flags = []
-        if context['filetype'] == 'c':
-            flags = ['-x', 'c'] + self._cflags
-        elif context['filetype'] == 'cpp':
-            flags = ['-x', 'c++'] + self._cppflags
-        elif context['filetype'] == 'objc':
-            flags = ['-x', 'objective-c'] + self._objcflags
-        elif context['filetype'] == 'objcpp':
-            flags = ['-x', 'objective-c++'] + self._objcppflags
-        else:
-            # default to cpp flag if filetype not known
-            flags = ['-x', 'c++'] + self._cppflags
-
-        # set up include path flags
-        include_flags = self._cpp_include_path
-        if context['filetype'] in ['objc', 'objcpp']:
-            include_flags = self._objc_include_path
-
-        # add arduino path if the path not already exist
-        for path in self._arduino_include_path:
-            if path not in include_flags:
-                include_flags.append(path)
-
-        # add cuda path if the path not already exist
-        for path in self._cuda_path:
-            if path not in include_flags:
-                include_flags.append(path)
-
-        flags += ['-I' + inc for inc in include_flags]
-        return flags
-
-
-    def _get_completion_result(self, context, filepath, position):
-        if not self._library_found:
-            return ''
-
-        # get flags and files
-        flags = self._get_completion_flags(context)
-        all_files = [(f, self._file_cache[f]) for f in self._file_cache]
-
-        # get translation unit options
-        tu_options = tu.PARSE_CACHE_COMPLETION_RESULTS | \
-                     tu.PARSE_PRECOMPILED_PREAMBLE | \
-                     tu.PARSE_INCOMPLETE
-        if self._get_detail:
-            tu_options |= tu.PARSE_DETAILED_PROCESSING_RECORD
-
-        # cache translation unit
-        if filepath not in self._translation_unit_cache:
-            tunit = tu.from_source(filepath, flags,
-                                   unsaved_files=all_files,
-                                   options=tu_options)
-            result = tunit.codeComplete(filepath,
-                                        position[0],
-                                        position[1],
-                                        unsaved_files=all_files)
-            self._translation_unit_cache[filepath] = tunit
-            return result
-        else:
-            result = self._translation_unit_cache[filepath].\
-                codeComplete(filepath,
-                             position[0],
-                             position[1],
-                             unsaved_files=all_files)
-            return result
-
-
-    def _get_current_cache_key(self, context, position):
-        line = self.vim.current.buffer[position[0]-1]
-        column = position[1]
-        first = max([line.rfind(d, 0, column-1) for d in self._delimiter])
-        fileid = os.path.join(context['cwd'],
-            get_buffer_name(context)) + ':'
-
-        # if no delimiter is found try to find the function name
-        if first < 0:
-            # find the closest function name to current position
-            function_name = re.compile(r'\s*([\w\d]*)\s*\([^\(&^\)]*\)\s*\n*{')
-            content = '\n'.join(self.vim.current.buffer[0:position[0]])
-            target = function_name.findall(content)
-            if target:
-                return fileid + target[-1]
-            else:
-                return fileid + 'line' + str(position[0])
-
-        # try to find the second delimiter
-        second = max([line.rfind(d, 0, first-1) for d in self._delimiter])
-        if second < 0:
-            return fileid + line[0:first].strip()
-        else:
-            return fileid + line[second+1:first].strip()
-
-
-    def _gather_completion(self, context, position, key):
-        try:
-            buffer_name = get_buffer_name(context)
-            raw_result = \
-                self._get_completion_result(context, buffer_name, position)
-            parsed_result = parse_raw_result(raw_result)
-            self._result_cache[key] = parsed_result
-            self._position_cache[key] = position
-            return parsed_result
-        except:
-            return []
-
-
-    def get_complete_position(self, context):
-        m = re.search(r'\w*$', context['input'])
-        return m.start() if m else -1
-
-
-    def gather_candidates(self, context):
-        self._update_file_cache(context)
-
-        cache_key = self._get_current_cache_key(context,
-                                                context['position'][1:])
-        position = self._get_completion_position(context)
-
-        parsed_result = []
-        if cache_key not in self._result_cache:
-            parsed_result = self._gather_completion(context, position,
-                                                    cache_key)
-        else:
-            parsed_result = self._result_cache[cache_key]
-        return get_candidates(parsed_result, self.complete_paren)
-
-
-def main():
-    setup_libclang(conf, '3.8')
-
-
-if __name__ == '__main__':
-    main()
+    cache_key = self._get_current_cache_key(context, context['position'][1:])
+    position = self._get_completion_position(context)
+    parsed_result = []
+    if cache_key not in self._result_cache:
+      parsed_result = self._gather_and_cache_completion(
+        context, position, cache_key)
+    else:
+      parsed_result = self._result_cache[cache_key]
+    return self._get_candidates(parsed_result, self.complete_paren)
