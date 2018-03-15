@@ -32,25 +32,6 @@ class Source(Base, ClangCompletion):
     self.max_menu_width = 160
     self.max_abbr_width = 160
 
-    self._init_vars()
-
-  def _init_vars(self):
-    v = self.vim.vars
-    self._get_detail = v['deoplete#sources#cpp#get_detail']
-    self.complete_paren = v['deoplete#sources#cpp#complete_paren']
-
-    # include flags
-    self._cflags = v['deoplete#sources#cpp#cflags']
-    self._cppflags = v['deoplete#sources#cpp#cppflags']
-    self._objcflags = v['deoplete#sources#cpp#objcflags']
-    self._objcppflags = v['deoplete#sources#cpp#objcppflags']
-
-    # include path
-    self._c_include_path = v['deoplete#sources#cpp#c_include_path']
-    self._cpp_include_path = v['deoplete#sources#cpp#cpp_include_path']
-    self._objc_include_path = v['deoplete#sources#cpp#objc_include_path']
-    self._objcpp_include_path = v['deoplete#sources#cpp#objcpp_include_path']
-
   def on_init(self, context):
     if context['filetype'] == 'c':
       self.input_pattern = (
