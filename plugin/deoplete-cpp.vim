@@ -42,7 +42,7 @@ let g:deoplete#sources#cpp#objcpp_include_path =
 " arudino ide path
 let g:deoplete#sources#cpp#arduino_path =
 \   get(g:, 'deoplete#sources#cpp#arduino_path',
-\   '/usr/local/share/arduino')
+\   '/usr/share/arduino')
 
 " cuda path
 let g:deoplete#sources#cpp#cuda_path =
