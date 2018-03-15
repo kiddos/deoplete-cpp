@@ -85,11 +85,11 @@ class Source(Base, ClangCompletion):
       self._setup_completion_cache(context)
     self._cache_delimiter_completion(context)
 
-    m = re.search(r'\w*$', context['input'])
+    m = re.search(r'[^\s-]*$', context['input'])
     return m.start() if m else -1
 
   def get_complete_position(self, context):
-    m = re.search(r'\w*$', context['input'])
+    m = re.search(r'[^\s-]*$', context['input'])
     return m.start() if m else -1
 
   def gather_candidates(self, context):
