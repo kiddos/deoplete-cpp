@@ -48,13 +48,8 @@ def get_translation_unit(filepath, flags, all_files):
 
     return tu.from_source(filepath, flags, unsaved_files=all_files,
       options=options)
-  except:
+  except Exception as e:
     return None
-
-
-def get_buffer_name(context):
-  buffer_name = context['bufname']
-  return os.path.join(context['cwd'], buffer_name)
 
 
 def get_value(result, key):
@@ -104,8 +99,31 @@ class ClangCompletion(object):
     self._translation_unit_cache = {}
     self._result_cache = {}
 
+    self._init_vars()
+
+  def _init_vars(self):
+    v = self.vim.vars
+    self._get_detail = v['deoplete#sources#cpp#get_detail']
+    self.complete_paren = v['deoplete#sources#cpp#complete_paren']
+
+    # include flags
+    self._cflags = v['deoplete#sources#cpp#cflags']
+    self._cppflags = v['deoplete#sources#cpp#cppflags']
+    self._objcflags = v['deoplete#sources#cpp#objcflags']
+    self._objcppflags = v['deoplete#sources#cpp#objcppflags']
+
+    # include path
+    self._c_include_path = v['deoplete#sources#cpp#c_include_path']
+    self._cpp_include_path = v['deoplete#sources#cpp#cpp_include_path']
+    self._objc_include_path = v['deoplete#sources#cpp#objc_include_path']
+    self._objcpp_include_path = v['deoplete#sources#cpp#objcpp_include_path']
+
+  def get_buffer_name(self, context):
+    buffer_name = context['bufname']
+    return os.path.join(context['cwd'], buffer_name)
+
   def _update_file_cache(self, context):
-    filepath = get_buffer_name(context)
+    filepath = self.get_buffer_name(context)
     content = '\n'.join(self.vim.current.buffer)
     self._file_cache[filepath] = content
 
@@ -117,7 +135,7 @@ class ClangCompletion(object):
       self._gather_and_cache_completion(context, position, cache_key)
     else:
       # remove old result
-      filepath = get_buffer_name(context)
+      filepath = self.get_buffer_name(context)
       keys_to_remove = []
       for key in self._result_cache:
         if key.startswith(filepath):
@@ -168,21 +186,20 @@ class ClangCompletion(object):
       result = tunit.codeComplete(filepath,
         position[0], position[1], unsaved_files=all_files)
       self._translation_unit_cache[filepath] = tunit
-      return result
     else:
       # use the cached translation unit
       tunit = self._translation_unit_cache[filepath]
       result = tunit.codeComplete(filepath,
         position[0], position[1], unsaved_files=all_files)
-      return result
+    return result
 
   def _get_current_cache_key(self, context, position):
-    fileid = os.path.join(context['cwd'], get_buffer_name(context))
+    fileid = os.path.join(context['cwd'], self.get_buffer_name(context))
     return fileid + ':(%d,%d)' % (position[0], position[1])
 
   def _gather_and_cache_completion(self, context, position, key):
     try:
-      buffer_name = get_buffer_name(context)
+      buffer_name = self.get_buffer_name(context)
       raw_result = \
           self._get_completion_result(context, buffer_name, position)
       parsed_result = parse_raw_result(raw_result)
@@ -202,9 +219,6 @@ class ClangCompletion(object):
           cache_key = self._get_current_cache_key(context, position)
           self._gather_and_cache_completion(
             context, position, cache_key)
-    with open('/home/joseph/.vim-log', 'w') as f:
-      f.write(str(self._result_cache))
-
 
   def _get_candidates(self, parsed_result, include_paren=False):
     candidates = []
