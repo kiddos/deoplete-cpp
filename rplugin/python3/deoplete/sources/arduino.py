@@ -47,29 +47,37 @@ class Source(Base, ClangCompletion):
     arduino = re.compile(r'\s*#include\s*<Arduino.h>')
     if not arduino.findall(content):
       content = '#include <Arduino.h>\n' + content
+
     self._file_cache[filepath] = content
 
   def _setup_arduino_path(self):
-    self._arduino_include_path = []
-    if os.path.isdir(self._arduino_path):
-      arduino_core = os.path.join(self._arduino_path,
-        'hardware/arduino/cores/arduino')
-      arduino_library = os.path.join(self._arduino_path, 'libraries')
-      self._arduino_include_path += [arduino_core] + \
-        [os.path.join(arduino_library, lib)
-          for lib in os.listdir(arduino_library)
-          if os.path.isdir(os.path.join(arduino_library, lib))]
-      self._cppflags += ['-I%s' % (p) for p in self._arduino_include_path]
+    home_dir = os.environ['HOME']
+    platformio_dir = os.path.join(home_dir, '.platformio', 'packages')
+    self._cpp_include_path.append(os.path.join(platformio_dir,
+      'toolchain-atmelavr/include'))
+    self._cpp_include_path.append(os.path.join(platformio_dir,
+      'toolchain-atmelavr/avr/include'))
+    self._cpp_include_path.append(os.path.join(platformio_dir,
+      'toolchain-atmelavr/x86_64-pc-linux-gnu/avr/include'))
+    self._cpp_include_path.append(os.path.join(platformio_dir,
+      'framework-arduinoavr/cores/arduino'))
+    self._cpp_include_path.append(os.path.join(platformio_dir,
+      'toolchain-gccarmnoneeabi/arm-none-eabi/include'))
+
+    arduino_libs = os.path.join(platformio_dir,
+      'framework-arduinoavr', 'libraries')
+    for lib in os.listdir(arduino_libs):
+      lib_path = os.path.join(arduino_libs, lib, 'src')
+      self._cpp_include_path.append(lib_path)
+
 
   def _get_platformio_libs(self, context):
     current_path = context['cwd']
     lib_folder = os.path.join(current_path, '.piolibdeps')
-    libs = os.listdir(lib_folder)
-    for l in libs:
-      self._cppflags.append('-I%s' % (os.path.join(lib_folder, l)))
-
-    with open('/home/joseph/.vim-log', 'w') as f:
-      f.write(str(self._cppflags))
+    if os.path.isdir(lib_folder):
+      libs = os.listdir(lib_folder)
+      for l in libs:
+        self._cpp_include_path.append(os.path.join(lib_folder, l))
 
   def on_init(self, context):
     self._delimiter = ['.', '->', '::']
