@@ -48,7 +48,7 @@ def get_translation_unit(filepath, flags, all_files):
 
     return tu.from_source(filepath, flags, unsaved_files=all_files,
       options=options)
-  except Exception as e:
+  except Exception:
     return None
 
 
@@ -165,9 +165,15 @@ class ClangCompletion(object):
       flags = ['-x', 'c++'] + self._cppflags
 
     # set up include path flags
-    include_flags = self._cpp_include_path
+    include_flags = []
+    for p in self._cpp_include_path:
+      if os.path.isdir(p):
+        include_flags.append(p)
+
     if context['filetype'] in ['objc', 'objcpp']:
-      include_flags = self._objc_include_path
+      for p in self._objc_include_path:
+        if os.path.isdir(p):
+          include_flags.append(p)
 
     flags += ['-I' + inc for inc in include_flags]
     return flags
