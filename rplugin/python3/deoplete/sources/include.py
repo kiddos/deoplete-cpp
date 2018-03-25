@@ -42,9 +42,9 @@ class Source(Base):
             if context['filetype'] == 'c':
                 paths = self._c_include_path
             elif context['filetype'] == 'objc':
-                paths = self._c_include_path
+                paths = self._objc_include_path
             elif context['filetype'] == 'objcpp':
-                paths = self._c_include_path
+                paths = self._objcpp_include_path
             for path in self.default_path:
                 if path not in paths:
                     paths = [path] + paths
