@@ -48,7 +48,7 @@ def get_translation_unit(filepath, flags, all_files):
 
     return tu.from_source(filepath, flags, unsaved_files=all_files,
       options=options)
-  except Exception:
+  except:
     return None
 
 
@@ -161,7 +161,7 @@ class ClangCompletion(object):
     include_flags = self._process_include_flag(self._cpp_include_path)
     flags = []
     if context['filetype'] == 'c':
-      flags = ['-x', 'c++'] + self._cflags
+      flags = ['-x', 'c'] + self._cflags
       include_flags = self._process_include_flag(self._c_include_path)
     elif context['filetype'] == 'cpp':
       flags = ['-x', 'c++'] + self._cppflags
