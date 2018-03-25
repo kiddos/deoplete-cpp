@@ -150,32 +150,32 @@ class ClangCompletion(object):
   def _get_completion_position(self, context):
     return (context['position'][1], self._get_closest_delimiter(context)+1)
 
+  def _process_include_flag(self, include_paths):
+    include_flags = []
+    for p in include_paths:
+      if os.path.isdir(p):
+        include_flags.append('-I%s' % (p))
+    return include_flags
+
   def _get_completion_flags(self, context):
+    include_flags = self._process_include_flag(self._cpp_include_path)
     flags = []
     if context['filetype'] == 'c':
-      flags = ['-x', 'c'] + self._cflags
+      flags = ['-x', 'c++'] + self._cflags
+      include_flags = self._process_include_flag(self._c_include_path)
     elif context['filetype'] == 'cpp':
       flags = ['-x', 'c++'] + self._cppflags
     elif context['filetype'] == 'objc':
       flags = ['-ObjC'] + self._objcflags
+      include_flags = self._process_include_flag(self._objc_include_path)
     elif context['filetype'] == 'objcpp':
       flags = ['-ObjC++'] + self._objcppflags
+      include_flags = self._process_include_flag(self._objcpp_include_path)
     else:
       # default to cpp flag if filetype not known
       flags = ['-x', 'c++'] + self._cppflags
 
-    # set up include path flags
-    include_flags = []
-    for p in self._cpp_include_path:
-      if os.path.isdir(p):
-        include_flags.append(p)
-
-    if context['filetype'] in ['objc', 'objcpp']:
-      for p in self._objc_include_path:
-        if os.path.isdir(p):
-          include_flags.append(p)
-
-    flags += ['-I' + inc for inc in include_flags]
+    flags += include_flags
     return flags
 
 
