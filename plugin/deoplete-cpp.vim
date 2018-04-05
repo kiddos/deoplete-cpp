@@ -3,7 +3,7 @@ if exists('g:loaded_deoplete_cpp')
 endif
 let g:loaded_deoplete_cpp = 1
 
-let g:deoplete#sources#cpp#clang_version='5.0'
+let g:deoplete#sources#cpp#clang_version='3.8'
 
 " flags
 let g:deoplete#sources#cpp#cflags =
