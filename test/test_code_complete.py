@@ -1,7 +1,21 @@
 from __future__ import print_function
-from clang.cindex import TranslationUnit as tu
+from __future__ import absolute_import
+
 import sys
+import os
 import re
+import unittest
+
+try:
+  current_dir = os.path.realpath(os.path.dirname(__file__))
+  sys.path.append(os.path.join(current_dir, '..', 'rplugin', 'python3',
+      'deoplete'))
+
+  from clang_util import setup_libclang
+  from clang.cindex import TranslationUnit as tu
+except:
+  raise Exception
+
 
 def code_complete(filepath, line, column, standard):
     f = open(filepath)
@@ -25,6 +39,7 @@ def code_complete(filepath, line, column, standard):
 
 
 def main():
+    setup_libclang('5.0')
     if len(sys.argv) != 6:
         print('Usage:\n'
             'python test_code_complete.py '
