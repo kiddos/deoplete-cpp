@@ -39,7 +39,7 @@ def code_complete(filepath, line, column, standard):
 
 
 def main():
-    setup_libclang('5.0')
+    setup_libclang('3.4')
     if len(sys.argv) != 6:
         print('Usage:\n'
             'python test_code_complete.py '
