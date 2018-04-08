@@ -1,5 +1,7 @@
 import re
 import subprocess
+import unittest
+
 
 def get_command_help_text(command):
     p = subprocess.Popen(command, shell=True,
@@ -162,15 +164,17 @@ def varify_varaible(variables):
     return True
 
 
-def main():
-    commands = gather_commands()
-    if not varify_command(commands):
-        print('not all commands are parsed')
-        raise Exception
-    variables = gather_variables()
-    if not varify_varaible(variables):
-        print('not all varaibles are found')
-        raise Exception
+class TestCMakeCommand(unittest.TestCase):
+    def setUp(self):
+        self.commands = gather_commands()
+        self.variables = gather_variables()
+
+    def test_commands(self):
+        self.assertTrue(varify_command(self.commands))
+
+    def test_variables(self):
+        self.assertTrue(varify_varaible(self.variables))
+
 
 if __name__ == '__main__':
-    main()
+    unittest.main()
