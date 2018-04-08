@@ -3,24 +3,16 @@ language: python
 sudo: required
 os: linux
 dist: trusty
-python: "3.4"
-
-addons:
-  apt:
-    sources:
-      - george-edison55-precise-backports
-    packages:
-      - cmake-data
-      - cmake
+python: "2.7"
 
 before_install:
   - sudo apt-get update
 
 install:
   - sudo apt-get install clang cmake libclang-3.4-dev python-clang-3.4 -y
-  - sudo apt-get install python3-pip
-  - sudo pip3 install -U pip
-  - sudo pip3 install -r test/requirements.txt
+  - sudo apt-get install python-pip
+  - sudo pip2 install -U pip
+  - sudo pip2 install -r test/requirements.txt
 
 script:
   - sudo ./run_test.sh
