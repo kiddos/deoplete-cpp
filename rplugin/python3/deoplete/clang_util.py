@@ -144,8 +144,11 @@ class ClangCompletion(object):
         self._result_cache.pop(key, None)
 
   def _get_closest_delimiter(self, context):
-    current_line = self.vim.current.buffer[context['position'][1]-1]
-    return max([current_line.rfind(d) + len(d) for d in self._delimiter])
+    try:
+      current_line = self.vim.current.buffer[context['position'][1]-1]
+      return max([current_line.rfind(d) + len(d) for d in self._delimiter])
+    except:
+      return 1
 
   def _get_completion_position(self, context):
     return (context['position'][1], self._get_closest_delimiter(context)+1)
