@@ -1,14 +1,18 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import absolute_import
-from past import autotranslate
+#  from __future__ import absolute_import
+#  from past import autotranslate
+#  from past.translation import install_hooks, remove_hooks
 
 import re
 import sys
 import subprocess
 import os
+import threading
 
-autotranslate(['clang'])
+import time
+
+#  autotranslate(['clang'])
 
 
 def setup_libclang(version):
@@ -42,9 +46,11 @@ def get_translation_unit(filepath, flags, all_files):
   try:
     from clang.cindex import TranslationUnit as tu
 
-    options = tu.PARSE_CACHE_COMPLETION_RESULTS | \
-      tu.PARSE_PRECOMPILED_PREAMBLE | tu.PARSE_INCOMPLETE | \
-      tu.PARSE_DETAILED_PROCESSING_RECORD
+    options = \
+      tu.PARSE_DETAILED_PROCESSING_RECORD | \
+      tu.PARSE_INCOMPLETE | \
+      tu.PARSE_PRECOMPILED_PREAMBLE | \
+      tu.PARSE_SKIP_FUNCTION_BODIES
 
     return tu.from_source(filepath, flags, unsaved_files=all_files,
       options=options)
@@ -91,15 +97,19 @@ def parse_raw_result(raw_result):
 
 class ClangCompletion(object):
   def __init__(self, vim, version):
-    self._libclang_found = setup_libclang(version)
-
     self.vim = vim
+    self._libclang_found = setup_libclang(version)
+    self.log('loaded libclang version: %s' % (version))
+
     # cache
     self._file_cache = {}
     self._translation_unit_cache = {}
     self._result_cache = {}
 
     self._init_vars()
+
+  def log(self, msg):
+    self.vim.command('echo "%s"' % (msg))
 
   def _init_vars(self):
     v = self.vim.vars
@@ -113,10 +123,16 @@ class ClangCompletion(object):
     self._objcppflags = v['deoplete#sources#cpp#objcppflags']
 
     # include path
-    self._c_include_path = v['deoplete#sources#cpp#c_include_path']
-    self._cpp_include_path = v['deoplete#sources#cpp#cpp_include_path']
-    self._objc_include_path = v['deoplete#sources#cpp#objc_include_path']
-    self._objcpp_include_path = v['deoplete#sources#cpp#objcpp_include_path']
+    self._c_include_path = \
+      v['deoplete#sources#cpp#c_include_path']
+    self._cpp_include_path = \
+      v['deoplete#sources#cpp#cpp_include_path']
+    self._objc_include_path = \
+      v['deoplete#sources#cpp#objc_include_path']
+    self._objcpp_include_path = \
+      v['deoplete#sources#cpp#objcpp_include_path']
+
+    self._gathering = False
 
   def get_buffer_name(self, context):
     buffer_name = context['bufname']
@@ -127,31 +143,51 @@ class ClangCompletion(object):
     content = '\n'.join(self.vim.current.buffer)
     self._file_cache[filepath] = content
 
+  def _get_current_cache_key(self, context, position):
+    fileid = os.path.join(context['cwd'], self.get_buffer_name(context))
+    return '%s:(%d,%d)' % (fileid, position[0], position[1])
+
+  def _get_default_cache_key(self, context):
+    fileid = os.path.join(context['cwd'], self.get_buffer_name(context))
+    return '%s:default' % (fileid)
+
+  def _async_complete(self, task):
+    thread = threading.Thread(target=task)
+    thread.start()
+
   def _setup_completion_cache(self, context):
     if not self._result_cache:
       # parse if not yet been parse
       position = [1, 1]
       cache_key = self._get_current_cache_key(context, position)
       self._gather_and_cache_completion(context, position, cache_key)
-    else:
       # remove old result
-      filepath = self.get_buffer_name(context)
-      keys_to_remove = []
-      for key in self._result_cache:
-        if key.startswith(filepath):
-          keys_to_remove.append(key)
-      for key in keys_to_remove:
-        self._result_cache.pop(key, None)
+      #  filepath = self.get_buffer_name(context)
+      #  keys_to_remove = []
+      #  for key in self._result_cache:
+      #    if key.startswith(filepath):
+      #      keys_to_remove.append(key)
+      #  for key in keys_to_remove:
+      #    self._result_cache.pop(key, None)
 
   def _get_closest_delimiter(self, context):
     try:
       current_line = self.vim.current.buffer[context['position'][1]-1]
-      return max([current_line.rfind(d) + len(d) for d in self._delimiter])
-    except:
-      return 1
+      delimiter_pos = []
+      for d in self._delimiter:
+        found = current_line.rfind(d)
+        if found >= 0:
+          delimiter_pos.append(found + len(d))
+        else:
+          delimiter_pos.append(found)
+      return max(delimiter_pos + [0])
+    except Exception as e:
+      self.log('error: %s' % (str(e)))
+      return 0
 
   def _get_completion_position(self, context):
-    return (context['position'][1], self._get_closest_delimiter(context)+1)
+    return (context['position'][1],
+      self._get_closest_delimiter(context)+1)
 
   def _process_include_flag(self, include_paths):
     include_flags = []
@@ -170,17 +206,18 @@ class ClangCompletion(object):
       flags = ['-x', 'c++'] + self._cppflags
     elif context['filetype'] == 'objc':
       flags = ['-ObjC'] + self._objcflags
-      include_flags = self._process_include_flag(self._objc_include_path)
+      include_flags = \
+        self._process_include_flag(self._objc_include_path)
     elif context['filetype'] == 'objcpp':
       flags = ['-ObjC++'] + self._objcppflags
-      include_flags = self._process_include_flag(self._objcpp_include_path)
+      include_flags = \
+        self._process_include_flag(self._objcpp_include_path)
     else:
       # default to cpp flag if filetype not known
       flags = ['-x', 'c++'] + self._cppflags
 
     flags += include_flags
     return flags
-
 
   def _get_completion_result(self, context, filepath, position):
     if not self._libclang_found:
@@ -193,18 +230,30 @@ class ClangCompletion(object):
       flags = self._get_completion_flags(context)
       tunit = get_translation_unit(filepath, flags, all_files)
       result = tunit.codeComplete(filepath,
-        position[0], position[1], unsaved_files=all_files)
+        position[0], position[1], unsaved_files=all_files,
+        include_macros=True)
       self._translation_unit_cache[filepath] = tunit
     else:
       # use the cached translation unit
       tunit = self._translation_unit_cache[filepath]
-      result = tunit.codeComplete(filepath,
-        position[0], position[1], unsaved_files=all_files)
-    return result
 
-  def _get_current_cache_key(self, context, position):
-    fileid = os.path.join(context['cwd'], self.get_buffer_name(context))
-    return fileid + ':(%d,%d)' % (position[0], position[1])
+      try:
+        from clang.cindex import TranslationUnit as tu
+
+        options = \
+          tu.PARSE_DETAILED_PROCESSING_RECORD | \
+          tu.PARSE_INCOMPLETE | \
+          tu.PARSE_PRECOMPILED_PREAMBLE | \
+          tu.PARSE_CACHE_COMPLETION_RESULTS | \
+          tu.PARSE_SKIP_FUNCTION_BODIES
+        tunit.reparse(unsaved_files=all_files, options=options)
+      except:
+        pass
+
+      result = tunit.codeComplete(filepath,
+        position[0], position[1], unsaved_files=all_files,
+        include_macros=True)
+    return result
 
   def _gather_and_cache_completion(self, context, position, key):
     try:
@@ -212,10 +261,45 @@ class ClangCompletion(object):
       raw_result = \
           self._get_completion_result(context, buffer_name, position)
       parsed_result = parse_raw_result(raw_result)
-      self._result_cache[key] = parsed_result
-      return parsed_result
+      self._cache_result(parsed_result, key)
     except:
-      return []
+      pass
+
+  def _async_gather_completion(self, context, position, key):
+    def gather():
+      self._gather_and_cache_completion(context, position, key)
+      self._gathering = False
+
+    if not self._gathering:
+      self._gathering = True
+      task = threading.Thread(target=gather)
+      task.start()
+
+  def _update_cache(self, context):
+    self._update_file_cache(context)
+    position = self._get_completion_position(context)
+    if position[-1] == 1:
+      cache_key = self._get_default_cache_key(context)
+    else:
+      cache_key = self._get_current_cache_key(context, position)
+    self._async_gather_completion(context, position, cache_key)
+    return cache_key
+
+  def _cache_result(self, parsed_result, key):
+    if key not in self._result_cache:
+      self._result_cache[key] = parsed_result
+    else:
+      for pr in parsed_result:
+        found = False
+        for rc in self._result_cache[key]:
+          if rc['TypedText'] == pr['TypedText']:
+            found = True
+            break
+        if not found:
+          self._result_cache[key].append(pr)
+
+  def _clear_cached_result(self):
+    self._result_cache = {}
 
   def _cache_delimiter_completion(self, context):
     if not hasattr(self, '_delimiter'): return
@@ -247,4 +331,5 @@ class ClangCompletion(object):
           'menu': pr['ResultType']
         }
       candidates.append(candidate)
+    #  self.log('results: %d' % (len(candidates)))
     return candidates
