@@ -70,7 +70,6 @@ class Source(Base, ClangCompletion):
       lib_path = os.path.join(arduino_libs, lib, 'src')
       self._cpp_include_path.append(lib_path)
 
-
   def _get_platformio_libs(self, context):
     current_path = context['cwd']
     lib_folder = os.path.join(current_path, '.piolibdeps')
@@ -82,16 +81,11 @@ class Source(Base, ClangCompletion):
   def on_init(self, context):
     self._delimiter = ['.', '->', '::']
 
-    self._update_file_cache(context)
-    self._setup_completion_cache(context)
+    self._update_cache(context)
     self._get_platformio_libs(context)
 
   def on_event(self, context):
-    self._update_file_cache(context)
-
-    if context['event'] == 'BufWritePost':
-      self._setup_completion_cache(context)
-    self._cache_delimiter_completion(context)
+    self._update_cache(context)
 
     m = re.search(r'[^\s-]*$', context['input'])
     return m.start() if m else -1
@@ -103,12 +97,18 @@ class Source(Base, ClangCompletion):
   def gather_candidates(self, context):
     self._update_file_cache(context)
 
-    cache_key = self._get_current_cache_key(context, context['position'][1:])
     position = self._get_completion_position(context)
-    parsed_result = []
-    if cache_key not in self._result_cache:
-      parsed_result = self._gather_and_cache_completion(
-        context, position, cache_key)
+    if position[-1] == 1:
+      cache_key = self._get_default_cache_key(context)
     else:
+      cache_key = self._get_current_cache_key(context, position)
+
+    parsed_result = []
+    if cache_key in self._result_cache:
       parsed_result = self._result_cache[cache_key]
+    else:
+      self._async_gather_completion(context, position, cache_key)
+
+    self.log('cache: %d, result: %d' %
+      (len(self._result_cache), len(parsed_result)))
     return self._get_candidates(parsed_result, self.complete_paren)
