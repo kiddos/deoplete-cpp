@@ -69,6 +69,6 @@ class Source(Base, ClangCompletion):
     else:
       self._async_gather_completion(context, position, cache_key)
 
-    self.log('cache: %s, %d, result: %d' %
-      (cache_key, len(self._result_cache), len(parsed_result)))
+    self.log('cache: %d, result: %d' %
+      (len(self._result_cache), len(parsed_result)))
     return self._get_candidates(parsed_result, self.complete_paren)
