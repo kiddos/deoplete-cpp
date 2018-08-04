@@ -3,7 +3,7 @@ if exists('g:loaded_deoplete_cpp')
 endif
 let g:loaded_deoplete_cpp = 1
 
-let g:deoplete#sources#cpp#clang_version='3.8'
+let g:deoplete#sources#cpp#clang_version='6.0'
 
 " flags
 let g:deoplete#sources#cpp#cflags =
@@ -12,7 +12,7 @@ let g:deoplete#sources#cpp#cflags =
 
 let g:deoplete#sources#cpp#cppflags =
 \   get(g:, 'deoplete#sources#cpp#cppflags',
-\   ['-std=c++98'])
+\   ['-std=c++11'])
 
 let g:deoplete#sources#cpp#objcflags =
 \   get(g:, 'deoplete#sources#cpp#objcflags',
