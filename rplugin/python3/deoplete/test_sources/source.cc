@@ -29,6 +29,12 @@ int main() {
   mouse.;
 
   p.none;
+
+  Outer outer;
+  outer.;
+  outer.inner_.;
+  outer.inner_.inner_inner_.;
+  outer.inner_.inner_inner_.inner_inner_inner_.;
   // comments
   return 0;
 }

@@ -11,7 +11,25 @@ class Group {
   Person people[100];
 };
 
+struct Stuff {
+  double data;
+  int a[10];
+
+  Stuff() {}
+};
+
 class Bag {
+ public:
+  Bag();
+  ~Bag();
+
+  void Release();
+
+ private:
+  Stuff stuff_;
+  int size_;
+
+  static int count;
 };
 
 template <typename T>
@@ -55,5 +73,26 @@ class B {
 
 }  // namespace A
 
+class Outer {
+ public:
+  Outer();
+
+ private:
+  class Inner {
+   private:
+    class InnerInner {
+     private:
+      struct InnerInnerInner {
+        int data;
+      };
+
+      InnerInnerInner inner_inner_inner_;
+    };
+
+    InnerInner inner_inner_;
+  };
+
+  Inner inner_;
+};
 
 #endif /* end of include guard: OBJECTS_H */
