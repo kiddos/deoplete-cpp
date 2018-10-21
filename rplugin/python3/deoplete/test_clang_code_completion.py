@@ -10,24 +10,26 @@ class TestSetup(unittest.TestCase):
     self.assertTrue(cc.setup_libclang('6.0'))
 
 
-class TestSource(unittest.TestCase):
-  def load_source(self, filepath):
-    args = ['-O0', '-g', '-x', 'c++', '-std=c++11']
+def load_source(index, filepath, unsaved_files):
+  args = ['-O0', '-g', '-x', 'c++', '-std=c++11']
 
-    with open(filepath, 'r') as f:
-      content = f.read()
+  with open(filepath, 'r') as f:
+    content = f.read()
 
-      self.unsaved_files.append((filepath, content))
-      return cc.Source(
-        self.index, filepath, args, self.unsaved_files)
+    unsaved_files.append((filepath, content))
+    return cc.Source(index, filepath, args, unsaved_files)
 
 
+class TestSourceBasic(unittest.TestCase):
   def setUp(self):
     cc.setup_libclang('6.0')
     self.index = cc.create_index()
     self.unsaved_files = []
 
-    self.source = self.load_source('./test_sources/source.cc')
+    self.source = load_source(self.index,
+      './test_sources/source.cc', self.unsaved_files)
+    self.object_source = load_source(self.index,
+      './test_sources/objects.cc', self.unsaved_files)
 
   def test_setup(self):
       self.assertNotEqual(self.source.tu, None)
@@ -76,11 +78,11 @@ class TestSource(unittest.TestCase):
     closest = self.source.find_closest_parent(11, 11)
     self.assertEqual(closest.displayname, 'main()')
 
-    #  closest = self.source.find_closest_parent(19, 2)
-    #  self.assertEqual(closest.displayname, 'main()')
+    closest = self.source.find_closest_parent(38, 2)
+    self.assertEqual(closest.displayname, 'main()')
 
-    #  closest = self.source.find_closest_parent(20, 2)
-    #  self.assertEqual(closest.displayname, 'main()')
+    closest = self.source.find_closest_parent(39, 11)
+    self.assertEqual(closest.displayname, 'main()')
 
   def test_code_complete_object(self):
     completion = self.source.code_complete(8, 5)
@@ -88,7 +90,6 @@ class TestSource(unittest.TestCase):
     self.assertIn('say()', completion)
     self.assertIn('age', completion)
     self.assertIn('id_', completion)
-
 
   def test_code_complete_pointer_object(self):
     completion = self.source.code_complete(16, 7)
@@ -199,10 +200,72 @@ class TestSource(unittest.TestCase):
     self.assertIn('age', completion)
     self.assertIn('id_', completion)
 
-  def test_std_members(self):
-    self.std_source = self.load_source(
-      './test_sources/std_source.cc')
+  def test_object_constructor_completion(self):
+    completion = self.object_source.code_complete(4, 10)
+    completion = [c['word'] for c in completion]
+    self.assertIn('data', completion)
+    self.assertIn('a', completion)
+    self.assertIn('Stuff()', completion)
 
+  def test_object_destructor_completion(self):
+    completion = self.object_source.code_complete(8, 10)
+    completion = [c['word'] for c in completion]
+    self.assertIn('data', completion)
+    self.assertIn('a', completion)
+    self.assertIn('Stuff()', completion)
+
+  def test_object_method_implementation(self):
+    completion = self.object_source.code_complete(11, 6)
+    completion = [c['word'] for c in completion]
+    self.assertIn('Bag()', completion)
+    self.assertIn('~Bag()', completion)
+    self.assertIn('Release()', completion)
+    self.assertIn('stuff_', completion)
+    self.assertIn('size_', completion)
+    self.assertIn('count', completion)
+
+  def test_recursive_inner_members(self):
+    completion = self.source.code_complete(34, 9)
+    completion = [c['word'] for c in completion]
+    self.assertIn('Outer()', completion)
+    self.assertIn('Inner', completion)
+    self.assertIn('inner_', completion)
+
+    completion = self.source.code_complete(35, 16)
+    completion = [c['word'] for c in completion]
+    self.assertIn('InnerInner', completion)
+    self.assertIn('inner_inner_', completion)
+
+    completion = self.source.code_complete(36, 29)
+    completion = [c['word'] for c in completion]
+    self.assertIn('InnerInnerInner', completion)
+    self.assertIn('inner_inner_inner_', completion)
+
+    completion = self.source.code_complete(37, 48)
+    completion = [c['word'] for c in completion]
+    self.assertIn('data', completion)
+
+  def test_crash(self):
+    content = self.source.content
+    lines = content.split('\n')
+
+    try:
+      for line, l in enumerate(lines):
+        for i in range(len(l)):
+          self.source.code_complete(line + 1, i + 1)
+    except Exception:
+      self.assertTrue(False)
+
+
+class TestStdSource(unittest.TestCase):
+  def setUp(self):
+    cc.setup_libclang('6.0')
+    self.index = cc.create_index()
+    self.unsaved_files = []
+    self.std_source = load_source(self.index,
+      './test_sources/std_source.cc', self.unsaved_files)
+
+  def test_std_members(self):
     completion = self.std_source.code_complete(16, 8)
     completion = [c['word'] for c in completion]
     self.assertIn('vector<_Tp, _Alloc>', completion)
@@ -253,16 +316,30 @@ class TestSource(unittest.TestCase):
     self.assertIn('setbase(int)', completion)
 
   def test_vector_members(self):
-    self.std_source = self.load_source(
-      './test_sources/std_source.cc')
-
     completion = self.std_source.code_complete(19, 5)
     completion = [c['word'] for c in completion]
     self.assertIn('size()', completion)
 
+  def test_crash(self):
+    content = self.std_source.content
+    lines = content.split('\n')
+    try:
+      for line, l in enumerate(lines):
+        for i in range(len(l)):
+          self.std_source.code_complete(line + 1, i + 1)
+    except Exception:
+      self.assertTrue(False)
+
+
+class TestOpenCVSource(unittest.TestCase):
+  def setUp(self):
+    cc.setup_libclang('6.0')
+    self.index = cc.create_index()
+    self.unsaved_files = []
+    self.opencv_source = load_source(self.index,
+      './test_sources/opencv_source.cc', self.unsaved_files)
+
   def test_opencv_source(self):
-    self.opencv_source = self.load_source(
-      './test_sources/opencv_source.cc')
     completion = self.opencv_source.code_complete(6, 7)
     completion = [c['word'] for c in completion]
     self.assertIn('Mat', completion)
@@ -279,37 +356,21 @@ class TestSource(unittest.TestCase):
     self.assertIn('empty()', completion)
     self.assertIn('total()', completion)
 
+
+class TestGRPCSource(unittest.TestCase):
+  def setUp(self):
+    cc.setup_libclang('6.0')
+    self.index = cc.create_index()
+    self.unsaved_files = []
+    self.grpc_source = load_source(self.index,
+      './test_sources/grpc_source.cc', self.unsaved_files)
+
   def test_grpc_source(self):
-    self.grpc_source = self.load_source(
-      './test_sources/grpc_source.cc')
     completion = self.grpc_source.code_complete(13, 9)
     completion = [c['word'] for c in completion]
     self.assertIn('Channel', completion)
     self.assertIn('Server', completion)
     self.assertIn('ServerBuilder', completion)
-
-  def test_crash(self):
-    content = self.source.content
-    lines = content.split('\n')
-
-    try:
-      for line, l in enumerate(lines):
-        for i in range(len(l)):
-          self.source.code_complete(line + 1, i + 1)
-    except Exception:
-      self.assertTrue(False)
-
-    self.std_source = self.load_source(
-      './test_sources/std_source.cc')
-
-    content = self.std_source.content
-    lines = content.split('\n')
-    try:
-      for line, l in enumerate(lines):
-        for i in range(len(l)):
-          self.std_source.code_complete(line + 1, i + 1)
-    except Exception:
-      self.assertTrue(False)
 
 
 def main():

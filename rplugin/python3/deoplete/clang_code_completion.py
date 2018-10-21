@@ -45,7 +45,10 @@ VARIABLE_MENU = 'variable'
 NAMESPACE_MENU = 'namespace'
 MACRO_MENU = 'macro'
 CLASS_MENU = 'class'
+STRUCT_MENU = 'struct'
 USING_MENU = 'using'
+CONSTRUCTOR_MENU = 'constructor'
+DESTRUCTOR_MENU = 'destructor'
 
 
 class Source(object):
@@ -125,11 +128,11 @@ class Source(object):
     end_index = max(semicolon_index, double_quote_index)
     op_index = max(dot_index, pointer_index)
     if op_index > end_index and op_index > scope_index:
-      pattern = re.compile(r'([^;\{]+)(\.|->)')
+      pattern = re.compile(r'([^;\}\{]+)(\.|->)')
       match = [i for i in reversed(re.findall(pattern, prev_content))]
       return match[0][0].strip(), match[0][1]
     elif scope_index > end_index and scope_index > op_index:
-      pattern = re.compile(r'([^;\{]+)(::)')
+      pattern = re.compile(r'([^;\}\{]+)(::)')
       match = [i for i in reversed(re.findall(pattern, prev_content))]
       return match[0][0].strip(), match[0][1]
     return None, None
@@ -145,9 +148,9 @@ class Source(object):
     def find(node):
       nonlocal min_dist
       nonlocal closest
-      if node.extent and node.extent.end and node.extent.end.file and \
-        node.extent.end.file.name == self.filepath:
-        location = node.extent.end
+      if node.displayname and node.location and node.location.file and \
+        node.location.file.name == self.filepath:
+        location = node.location
         dist = abs(location.line - line) + abs(location.column - col)
         closest = Cursor.from_location(self.tu, location)
         if (not min_dist or dist < min_dist) and closest.semantic_parent:
@@ -163,6 +166,8 @@ class Source(object):
     find(self.tu.cursor)
 
     if closest:
+      if closest.kind == CursorKind.TYPE_REF:
+        return closest.get_definition()
       return closest.semantic_parent
     return None
 
@@ -177,6 +182,7 @@ class Source(object):
 
     pattern = re.compile(r'->|\.')
     names = re.split(pattern, name)
+    #  print(names)
 
     def peel(type):
       #  print(type.kind)
@@ -197,6 +203,7 @@ class Source(object):
 
     def find(node, index):
       if node.kind == CursorKind.VAR_DECL:
+        #  print(node.kind, node.displayname, node.location, names[index])
         if node.displayname == names[index]:
           t = peel(node.type)
           if index == len(names) - 1:
@@ -205,10 +212,17 @@ class Source(object):
             find(t.get_declaration(), index + 1)
       elif node.kind == CursorKind.CXX_METHOD:
         if names[index].startswith(node.spelling):
-          #  print(node.type.kind)
           t = peel(node.type)
           if index == len(names) - 1:
             identifiers.append(t.get_declaration())
+          else:
+            find(t.get_declaration(), index + 1)
+      elif node.kind == CursorKind.FIELD_DECL:
+        if node.displayname == names[index]:
+          t = peel(node.type)
+          if index == len(names) - 1:
+            d = t.get_declaration()
+            identifiers.append(d)
           else:
             find(t.get_declaration(), index + 1)
 
@@ -227,13 +241,25 @@ class Source(object):
 
     def find(node, index):
       try:
-        if (node.kind == CursorKind.NAMESPACE or
-          node.kind == CursorKind.NAMESPACE_REF) and \
-          node.displayname == names[index]:
-          if index == len(names) - 1:
-            cursors.append(node)
-          else:
-            find(node, index + 1)
+        #  print(node.kind, node.displayname, node.location, names[index])
+        if node.kind == CursorKind.NAMESPACE:
+          if node.displayname and node.displayname == names[index]:
+            if index == len(names) - 1:
+              cursors.append(node)
+            else:
+              find(node, index + 1)
+        elif node.kind == CursorKind.NAMESPACE_REF:
+          if node.displayname and node.displayname == names[index]:
+            if index == len(names) - 1:
+              cursors.append(node)
+            else:
+              find(node, index + 1)
+        elif node.kind == CursorKind.CLASS_DECL:
+          if node.displayname and node.displayname == names[index]:
+            if index == len(names) - 1:
+              cursors.append(node)
+            else:
+              find(node, index + 1)
       except ValueError:
         pass
 
@@ -284,6 +310,12 @@ class Source(object):
         'kind': n.displayname,
         'menu': CLASS_MENU,
       }
+    elif n.kind == CursorKind.STRUCT_DECL:
+      return {
+        'word': n.displayname,
+        'kind': n.displayname,
+        'menu': STRUCT_MENU,
+      }
     elif n.kind == CursorKind.VAR_DECL:
       return {
         'word': n.displayname,
@@ -298,6 +330,18 @@ class Source(object):
           'kind': d.displayname,
           'menu': USING_MENU,
         }
+    elif n.kind == CursorKind.CONSTRUCTOR:
+      return {
+        'word': n.displayname,
+        'kind': n.displayname,
+        'menu': CONSTRUCTOR_MENU,
+      }
+    elif n.kind == CursorKind.DESTRUCTOR:
+      return {
+        'word': n.displayname,
+        'kind': n.displayname,
+        'menu': DESTRUCTOR_MENU,
+      }
     return None
 
   def get_completion(self, cursors):
@@ -314,7 +358,9 @@ class Source(object):
 
       # iterate cursor
       for n in cursor.get_children():
-        #  if n.displayname and 'Mat' in n.displayname:
+        #  if n.displayname:
+        #    print(n.displayname)
+        #  if n.displayname and 'Release' in n.displayname:
         #    print(n.displayname, n.kind)
         c = self.process_completion(n)
         if c:
