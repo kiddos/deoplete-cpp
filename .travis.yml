@@ -1,18 +1,29 @@
 language: python
 
-sudo: required
-os: linux
-dist: trusty
-python: "2.7"
+env:
+  - CLANG_VERSION=3.6
+  - CLANG_VERSION=3.8
+  - CLANG_VERSION=6.0
 
-before_install:
-  - sudo apt-get update
+addons:
+  apt:
+    packages:
+      clang
+      libclang-3.6-dev
+      libclang-3.8-dev
+      libclang-6.0-dev
+      cmake
+
+os: linux
+
+python:
+  - "3.4"
+  - "3.5"
+  - "3.6"
 
 install:
-  - sudo apt-get install clang cmake libclang-3.4-dev python-clang-3.4 -y
-  - sudo pip2 install clang==3.4.0
-  - sudo pip2 install -U pip
-  - sudo pip2 install -r test/requirements.txt
+  - pip install clang==$CLANG_VERSION
 
 script:
-  - sudo ./run_test.sh
+  - python rplugin/python3/deoplete/test_clang_code_completion.py
+  - python test/test_cmake_command.py
