@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import os
 import unittest
 
 import clang_code_completion as cc
@@ -13,6 +14,8 @@ class TestSetup(unittest.TestCase):
 def load_source(index, filepath, unsaved_files):
   args = ['-O0', '-g', '-x', 'c++', '-std=c++11']
 
+  dirname = os.path.realpath(os.path.dirname(__file__))
+  filepath = os.path.join(dirname, filepath)
   with open(filepath, 'r') as f:
     content = f.read()
 
