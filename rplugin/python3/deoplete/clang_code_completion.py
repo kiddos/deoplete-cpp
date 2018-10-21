@@ -236,6 +236,7 @@ class Source(object):
     """
     find namespace cursors given name
     """
+
     names = name.split('::')
     cursors = []
 
@@ -269,6 +270,10 @@ class Source(object):
     return cursors
 
   def process_completion(self, n):
+    """
+    process completion result
+    """
+
     if n.kind == CursorKind.FUNCTION_DECL or \
       n.kind == CursorKind.FUNCTION_TEMPLATE:
       return {
@@ -378,6 +383,10 @@ class Source(object):
       print(node.kind, node.displayname)
 
   def code_complete(self, line, col):
+    """
+    get code completion result at this line and column
+    """
+
     #  self.test_template()
 
     token, op = self.find_closest_token(line, col)
