@@ -3,7 +3,7 @@
 import os
 import unittest
 
-import clang_code_completion as cc
+import clang_util as cc
 
 
 class TestSetup(unittest.TestCase):
