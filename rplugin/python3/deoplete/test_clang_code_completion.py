@@ -2,6 +2,7 @@
 
 import os
 import unittest
+import time
 
 import clang_util as cc
 
@@ -47,7 +48,10 @@ class TestCppSourceBasic(unittest.TestCase):
     cc.Source(self.index, filepath, args, [(filepath, content)])
 
   def test_clang_code_complete(self):
-    self.source.code_complete(8, 5, self.unsaved_files)
+    completion = self.source.code_complete(8, 5, self.unsaved_files)
+    print(completion)
+    completion = [c['word'] for c in completion]
+    print(completion)
 
   def test_reparse(self):
     self.source.reparse(self.unsaved_files)
@@ -359,7 +363,8 @@ class TestOpenCVSource(unittest.TestCase):
     self.opencv_source.complete_full = True
 
   def test_clang_code_complete(self):
-    self.opencv_source.code_complete(6, 7, self.unsaved_files)
+    completion = self.opencv_source.code_complete(6, 7, self.unsaved_files)
+    completion = [c['word'] for c in completion]
 
   def test_opencv_source(self):
     completion = self.opencv_source.code_complete_semantic(6, 7)
