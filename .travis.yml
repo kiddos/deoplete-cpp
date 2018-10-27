@@ -23,5 +23,7 @@ install:
   - pip install clang==$CLANG_VERSION
 
 script:
-  - python rplugin/python3/deoplete/test_clang_code_completion.py
   - python test/test_cmake_command.py
+  - python rplugin/python3/deoplete/test_clang_code_completion.py TestCppSourceBasic
+  - python rplugin/python3/deoplete/test_clang_code_completion.py TestStdSource
+  - python rplugin/python3/deoplete/test_clang_code_completion.py TestCSourceBasic
