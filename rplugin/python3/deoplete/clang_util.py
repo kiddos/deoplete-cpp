@@ -377,7 +377,7 @@ class Source(object):
         key = attr[1].strip()
         value = attr[0].strip()
         if key == 'LeftParen':
-          full = result_obj['TypedText'] + value
+          full = result_obj['TypedText']
           for j in range(i, len(attrs)):
             attr = attrs[j]
             key = attr[1].strip()
@@ -673,11 +673,11 @@ class ClangCompletion(object):
 
       line, col = self._get_cursor_pos()
       # original completion way
-      #  unsaved_files = [(filepath, content)
-      #    for filepath, content in self._file_contents.items()]
-      #  results = self._file_sources[filepath].code_complete(line, col,
-      #    unsaved_files)
-      results = self._file_sources[filepath].code_complete_semantic(line, col)
+      unsaved_files = [(filepath, content)
+        for filepath, content in self._file_contents.items()]
+      results = self._file_sources[filepath].code_complete(line, col,
+        unsaved_files)
+      #  results = self._file_sources[filepath].code_complete_semantic(line, col)
       self.log('%s completion: (%s, %s) | %s' % (filepath, line, col, len(results)))
       return results
     return []
