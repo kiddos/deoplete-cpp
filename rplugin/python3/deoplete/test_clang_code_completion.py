@@ -23,7 +23,7 @@ def load_source(index, filepath, unsaved_files):
     return cc.Source(index, filepath, args, unsaved_files)
 
 
-class TestSourceBasic(unittest.TestCase):
+class TestCppSourceBasic(unittest.TestCase):
   def setUp(self):
     cc.setup_libclang('6.0')
     self.index = cc.create_index()
@@ -34,14 +34,23 @@ class TestSourceBasic(unittest.TestCase):
     self.object_source = load_source(self.index,
       './test_sources/objects.cc', self.unsaved_files)
 
+    self.source.complete_function = True
+    self.source.complete_template = True
+    self.source.complete_constructor = True
+    self.source.complete_destructor = True
+
   def test_setup(self):
-      self.assertNotEqual(self.source.tu, None)
+    self.assertNotEqual(self.source.tu, None)
 
   def test_code_completion_with_fake_file(self):
     filepath = './test_sources/does_not_exists.cc'
-    args = ['-O0', '-g']
+    args = ['-O0', '-g', '-x', 'c++']
     content = ''
     cc.Source(self.index, filepath, args, [(filepath, content)])
+
+  def test_clang_code_complete(self):
+    print(self.unsaved_files)
+    self.source.code_complete(8, 5, self.unsaved_files)
 
   def test_reparse(self):
     self.source.reparse(self.unsaved_files)
@@ -88,21 +97,21 @@ class TestSourceBasic(unittest.TestCase):
     self.assertEqual(closest.displayname, 'main()')
 
   def test_code_complete_object(self):
-    completion = self.source.code_complete(8, 5)
+    completion = self.source.code_complete_semantic(8, 5)
     completion = [c['word'] for c in completion]
     self.assertIn('say()', completion)
     self.assertIn('age', completion)
     self.assertIn('id_', completion)
 
   def test_code_complete_pointer_object(self):
-    completion = self.source.code_complete(16, 7)
+    completion = self.source.code_complete_semantic(16, 7)
     completion = [c['word'] for c in completion]
     self.assertIn('say()', completion)
     self.assertIn('age', completion)
     self.assertIn('id_', completion)
 
   def test_code_complete_namespace(self):
-    completion = self.source.code_complete(13, 6)
+    completion = self.source.code_complete_semantic(13, 6)
     completion = [c['word'] for c in completion]
     self.assertIn('function4()', completion)
     self.assertIn('function5(double, double)', completion)
@@ -112,14 +121,14 @@ class TestSourceBasic(unittest.TestCase):
     self.assertIn('A<T>', completion)
 
   def test_code_complete_inner_namespace(self):
-    completion = self.source.code_complete(18, 9)
+    completion = self.source.code_complete_semantic(18, 9)
     completion = [c['word'] for c in completion]
     self.assertIn('function7()', completion)
     self.assertIn('B<T, U>', completion)
     self.assertNotIn('EmptyB()', completion)
 
   def test_code_complete_empty(self):
-    completion = self.source.code_complete(14, 1)
+    completion = self.source.code_complete_semantic(14, 1)
     completion = [c['word'] for c in completion]
     self.assertIn('function1()', completion)
     self.assertIn('function2(int, int)', completion)
@@ -134,7 +143,7 @@ class TestSourceBasic(unittest.TestCase):
     self.assertIn('main()', completion)
 
   def test_code_complete_spaces(self):
-    completion = self.source.code_complete(32, 1)
+    completion = self.source.code_complete_semantic(32, 1)
     completion = [c['word'] for c in completion]
     self.assertIn('function1()', completion)
     self.assertIn('function2(int, int)', completion)
@@ -149,7 +158,7 @@ class TestSourceBasic(unittest.TestCase):
     self.assertIn('main()', completion)
 
   def test_code_complete_global(self):
-    completion = self.source.code_complete(5, 1)
+    completion = self.source.code_complete_semantic(5, 1)
     completion = [c['word'] for c in completion]
     self.assertIn('function1()', completion)
     self.assertIn('function2(int, int)', completion)
@@ -164,61 +173,61 @@ class TestSourceBasic(unittest.TestCase):
     self.assertIn('main()', completion)
 
   def test_code_completion_array_element(self):
-    completion = self.source.code_complete(24, 13)
+    completion = self.source.code_complete_semantic(24, 13)
     completion = [c['word'] for c in completion]
     self.assertIn('say()', completion)
     self.assertIn('age', completion)
     self.assertIn('id_', completion)
 
   def test_code_completion_function_proto(self):
-    completion = self.source.code_complete(26, 19)
+    completion = self.source.code_complete_semantic(26, 19)
     completion = [c['word'] for c in completion]
     self.assertIn('say()', completion)
     self.assertIn('age', completion)
     self.assertIn('id_', completion)
 
   def test_code_completion_class_template_method(self):
-    completion = self.source.code_complete(29, 9)
+    completion = self.source.code_complete_semantic(29, 9)
     completion = [c['word'] for c in completion]
     self.assertIn('Move()', completion)
     self.assertIn('x', completion)
     self.assertIn('y', completion)
 
   def test_code_completion_object_members_parts(self):
-    completion = self.source.code_complete(31, 9)
+    completion = self.source.code_complete_semantic(31, 9)
     completion = [c['word'] for c in completion]
     self.assertIn('say()', completion)
     self.assertIn('age', completion)
     self.assertIn('id_', completion)
 
-    completion = self.source.code_complete(31, 7)
+    completion = self.source.code_complete_semantic(31, 7)
     completion = [c['word'] for c in completion]
     self.assertIn('say()', completion)
     self.assertIn('age', completion)
     self.assertIn('id_', completion)
 
-    completion = self.source.code_complete(31, 5)
+    completion = self.source.code_complete_semantic(31, 5)
     completion = [c['word'] for c in completion]
     self.assertIn('say()', completion)
     self.assertIn('age', completion)
     self.assertIn('id_', completion)
 
   def test_object_constructor_completion(self):
-    completion = self.object_source.code_complete(4, 10)
+    completion = self.object_source.code_complete_semantic(4, 10)
     completion = [c['word'] for c in completion]
     self.assertIn('data', completion)
     self.assertIn('a', completion)
     self.assertIn('Stuff()', completion)
 
   def test_object_destructor_completion(self):
-    completion = self.object_source.code_complete(8, 10)
+    completion = self.object_source.code_complete_semantic(8, 10)
     completion = [c['word'] for c in completion]
     self.assertIn('data', completion)
     self.assertIn('a', completion)
     self.assertIn('Stuff()', completion)
 
   def test_object_method_implementation(self):
-    completion = self.object_source.code_complete(11, 6)
+    completion = self.object_source.code_complete_semantic(11, 6)
     completion = [c['word'] for c in completion]
     self.assertIn('Bag()', completion)
     self.assertIn('~Bag()', completion)
@@ -228,23 +237,23 @@ class TestSourceBasic(unittest.TestCase):
     self.assertIn('count', completion)
 
   def test_recursive_inner_members(self):
-    completion = self.source.code_complete(34, 9)
+    completion = self.source.code_complete_semantic(34, 9)
     completion = [c['word'] for c in completion]
     self.assertIn('Outer()', completion)
     self.assertIn('Inner', completion)
     self.assertIn('inner_', completion)
 
-    completion = self.source.code_complete(35, 16)
+    completion = self.source.code_complete_semantic(35, 16)
     completion = [c['word'] for c in completion]
     self.assertIn('InnerInner', completion)
     self.assertIn('inner_inner_', completion)
 
-    completion = self.source.code_complete(36, 29)
+    completion = self.source.code_complete_semantic(36, 29)
     completion = [c['word'] for c in completion]
     self.assertIn('InnerInnerInner', completion)
     self.assertIn('inner_inner_inner_', completion)
 
-    completion = self.source.code_complete(37, 48)
+    completion = self.source.code_complete_semantic(37, 48)
     completion = [c['word'] for c in completion]
     self.assertIn('data', completion)
 
@@ -255,21 +264,34 @@ class TestSourceBasic(unittest.TestCase):
     try:
       for line, l in enumerate(lines):
         for i in range(len(l)):
-          self.source.code_complete(line + 1, i + 1)
+          self.source.code_complete_semantic(line + 1, i + 1)
     except Exception:
       self.assertTrue(False)
 
 
 class TestStdSource(unittest.TestCase):
   def setUp(self):
-    cc.setup_libclang('6.0')
+    print(cc.setup_libclang('6.0'))
     self.index = cc.create_index()
     self.unsaved_files = []
     self.std_source = load_source(self.index,
       './test_sources/std_source.cc', self.unsaved_files)
 
+    self.std_source.complete_function = True
+    self.std_source.complete_template = True
+    self.std_source.complete_constructor = True
+    self.std_source.complete_destructor = True
+
+    self.std_source2 = load_source(self.index,
+      './test_sources/std_source2.cc', self.unsaved_files)
+    #  self.std_source2.reparse(self.unsaved_files)
+    self.std_source2.complete_function = True
+    self.std_source2.complete_template = True
+    self.std_source2.complete_constructor = True
+    self.std_source2.complete_destructor = True
+
   def test_std_members(self):
-    completion = self.std_source.code_complete(16, 8)
+    completion = self.std_source.code_complete_semantic(16, 8)
     completion = [c['word'] for c in completion]
     self.assertIn('vector<_Tp, _Alloc>', completion)
 
@@ -319,9 +341,13 @@ class TestStdSource(unittest.TestCase):
     self.assertIn('setbase(int)', completion)
 
   def test_vector_members(self):
-    completion = self.std_source.code_complete(19, 5)
+    completion = self.std_source.code_complete_semantic(19, 5)
     completion = [c['word'] for c in completion]
     self.assertIn('size()', completion)
+
+    completion = self.std_source2.code_complete_semantic(6, 5)
+    completion = [c['word'] for c in completion]
+    print(completion)
 
   def test_crash(self):
     content = self.std_source.content
@@ -329,7 +355,7 @@ class TestStdSource(unittest.TestCase):
     try:
       for line, l in enumerate(lines):
         for i in range(len(l)):
-          self.std_source.code_complete(line + 1, i + 1)
+          self.std_source.code_complete_semantic(line + 1, i + 1)
     except Exception:
       self.assertTrue(False)
 
@@ -342,13 +368,16 @@ class TestOpenCVSource(unittest.TestCase):
     self.opencv_source = load_source(self.index,
       './test_sources/opencv_source.cc', self.unsaved_files)
 
+  def test_clang_code_complete(self):
+    self.opencv_source.code_complete(6, 7, self.unsaved_files)
+
   def test_opencv_source(self):
-    completion = self.opencv_source.code_complete(6, 7)
+    completion = self.opencv_source.code_complete_semantic(6, 7)
     completion = [c['word'] for c in completion]
     self.assertIn('Mat', completion)
     self.assertIn('Mat_<_Tp>', completion)
 
-    completion = self.opencv_source.code_complete(10, 7)
+    completion = self.opencv_source.code_complete_semantic(10, 7)
     completion = [c['word'] for c in completion]
     self.assertIn('rows', completion)
     self.assertIn('cols', completion)
@@ -369,11 +398,26 @@ class TestGRPCSource(unittest.TestCase):
       './test_sources/grpc_source.cc', self.unsaved_files)
 
   def test_grpc_source(self):
-    completion = self.grpc_source.code_complete(13, 9)
+    completion = self.grpc_source.code_complete_semantic(13, 9)
     completion = [c['word'] for c in completion]
     self.assertIn('Channel', completion)
     self.assertIn('Server', completion)
     self.assertIn('ServerBuilder', completion)
+
+
+class TestCSourceBasic(unittest.TestCase):
+  def setUp(self):
+    cc.setup_libclang('6.0')
+    self.index = cc.create_index()
+    self.unsaved_files = []
+
+    self.source = load_source(self.index,
+      './test_sources/source.c', self.unsaved_files)
+
+  def test_completion(self):
+    completion = self.source.code_complete_semantic(5, 1)
+    completion = [c['word'] for c in completion]
+    print(completion)
 
 
 def main():
