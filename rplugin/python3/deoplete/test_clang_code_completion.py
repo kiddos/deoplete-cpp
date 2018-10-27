@@ -11,8 +11,8 @@ class TestSetup(unittest.TestCase):
     self.assertTrue(cc.setup_libclang('6.0'))
 
 
-def load_source(index, filepath, unsaved_files):
-  args = ['-O0', '-g', '-x', 'c++', '-std=c++11']
+def load_source(index, filepath, unsaved_files,
+    args=['-O0', '-g', '-x', 'c++', '-std=c++11']):
 
   dirname = os.path.realpath(os.path.dirname(__file__))
   filepath = os.path.join(dirname, filepath)
@@ -34,10 +34,8 @@ class TestCppSourceBasic(unittest.TestCase):
     self.object_source = load_source(self.index,
       './test_sources/objects.cc', self.unsaved_files)
 
-    self.source.complete_function = True
-    self.source.complete_template = True
-    self.source.complete_constructor = True
-    self.source.complete_destructor = True
+    self.source.complete_full = True
+    self.object_source.complete_full = True
 
   def test_setup(self):
     self.assertNotEqual(self.source.tu, None)
@@ -49,7 +47,6 @@ class TestCppSourceBasic(unittest.TestCase):
     cc.Source(self.index, filepath, args, [(filepath, content)])
 
   def test_clang_code_complete(self):
-    print(self.unsaved_files)
     self.source.code_complete(8, 5, self.unsaved_files)
 
   def test_reparse(self):
@@ -271,24 +268,16 @@ class TestCppSourceBasic(unittest.TestCase):
 
 class TestStdSource(unittest.TestCase):
   def setUp(self):
-    print(cc.setup_libclang('6.0'))
+    cc.setup_libclang('6.0')
     self.index = cc.create_index()
     self.unsaved_files = []
     self.std_source = load_source(self.index,
       './test_sources/std_source.cc', self.unsaved_files)
-
-    self.std_source.complete_function = True
-    self.std_source.complete_template = True
-    self.std_source.complete_constructor = True
-    self.std_source.complete_destructor = True
+    self.std_source.complete_full = True
 
     self.std_source2 = load_source(self.index,
       './test_sources/std_source2.cc', self.unsaved_files)
-    #  self.std_source2.reparse(self.unsaved_files)
-    self.std_source2.complete_function = True
-    self.std_source2.complete_template = True
-    self.std_source2.complete_constructor = True
-    self.std_source2.complete_destructor = True
+    self.std_source2.complete_full = True
 
   def test_std_members(self):
     completion = self.std_source.code_complete_semantic(16, 8)
@@ -367,6 +356,7 @@ class TestOpenCVSource(unittest.TestCase):
     self.unsaved_files = []
     self.opencv_source = load_source(self.index,
       './test_sources/opencv_source.cc', self.unsaved_files)
+    self.opencv_source.complete_full = True
 
   def test_clang_code_complete(self):
     self.opencv_source.code_complete(6, 7, self.unsaved_files)
@@ -396,6 +386,7 @@ class TestGRPCSource(unittest.TestCase):
     self.unsaved_files = []
     self.grpc_source = load_source(self.index,
       './test_sources/grpc_source.cc', self.unsaved_files)
+    self.grpc_source.complete_full = True
 
   def test_grpc_source(self):
     completion = self.grpc_source.code_complete_semantic(13, 9)
@@ -412,12 +403,40 @@ class TestCSourceBasic(unittest.TestCase):
     self.unsaved_files = []
 
     self.source = load_source(self.index,
-      './test_sources/source.c', self.unsaved_files)
+      './test_sources/source.c', self.unsaved_files,
+      args=['-O0', '-x', 'c', '-std=c99'])
+    self.source.complete_full = True
 
   def test_completion(self):
     completion = self.source.code_complete_semantic(5, 1)
     completion = [c['word'] for c in completion]
-    print(completion)
+    self.assertIn('printf(const char *restrict, ...)', completion)
+    self.assertIn('sprintf(char *restrict, const char *restrict, ...)',
+      completion)
+    self.assertIn('putc(int, FILE *)', completion)
+    self.assertIn('stdin', completion)
+    self.assertIn('stdout', completion)
+
+
+class TestArduinoSource(unittest.TestCase):
+  def setUp(self):
+    cc.setup_libclang('6.0')
+    self.index = cc.create_index()
+    self.unsaved_files = []
+
+    extra_path = os.path.join(os.environ['HOME'],
+      '.platformio/packages/framework-arduinoavr/cores/arduino')
+    self.source = load_source(self.index,
+      './test_sources/arduino_source.ino.cc', self.unsaved_files,
+      args=['-O0', '-g', '-x', 'c++', '-std=c++11', '-I' + extra_path,
+        '-D__AVR_ATmega2560__'])
+    self.source.complete_full = True
+
+  def test_completion(self):
+    completion = self.source.code_complete_semantic(4, 1)
+    completion = [c['word'] for c in completion]
+    self.assertIn('digitalWrite(int, int)', completion)
+    self.assertIn('digitalRead(int)', completion)
 
 
 def main():
