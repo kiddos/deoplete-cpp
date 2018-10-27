@@ -1,8 +1,8 @@
 language: python
 
 env:
-  - CLANG_VERSION=3.6
   - CLANG_VERSION=3.8
+  - CLANG_VERSION=3.9
 
 addons:
   apt:
