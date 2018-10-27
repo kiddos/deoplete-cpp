@@ -648,6 +648,15 @@ class ClangCompletion(object):
     self._update_file_content(context)
     self._update_file_source(context)
 
+  def _get_cursor_pos(self):
+    """
+    get current cursor position
+    """
+
+    line = self.vim.eval('line(".")')
+    col = self.vim.eval('col(".")')
+    return line, col
+
   def _get_candidates(self, context):
     """
     retrive candidate from source object
@@ -657,8 +666,7 @@ class ClangCompletion(object):
     if filepath in self._file_sources:
       self._file_sources[filepath].complete_full = self._full_completion
 
-      line = self.vim.eval('line(".")')
-      col = self.vim.eval('col(".")')
+      line, col = self._get_cursor_pos()
       # original completion way
       #  unsaved_files = [(filepath, content)
       #    for filepath, content in self._file_contents.items()]
