@@ -99,6 +99,7 @@ class Source(Base, ClangCompletion):
     """
 
     # cache the file
+    self.setup()
     self._update(context)
 
   def on_event(self, context):
