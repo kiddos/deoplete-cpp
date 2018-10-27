@@ -308,21 +308,26 @@ class Source(object):
     """
 
     completion = []
-    for cursor in cursors:
-      # to be able to parse template class methods
-      # require to reform cursor using this
-      if cursor != self.tu.cursor:
-        cursor = Cursor.from_location(self.tu, cursor.location)
 
-      # iterate cursor
+    def find(cursor):
       for n in cursor.get_children():
         #  if n.displayname:
-        #    print(n.displayname)
+        #    print(n.displayname, n.kind)
         #  if n.displayname and 'Release' in n.displayname:
         #    print(n.displayname, n.kind)
         c = self.process_completion(n)
         if c:
           completion.append(c)
+        if n.kind == CursorKind.UNEXPOSED_DECL:
+          find(n)
+
+    for cursor in cursors:
+      # to be able to parse template class methods
+      # require to reform cursor using this
+      if cursor != self.tu.cursor:
+        cursor = Cursor.from_location(self.tu, cursor.location)
+      find(cursor)
+
     return completion
 
   def get_fixits(self, line, col):
@@ -343,7 +348,7 @@ class Source(object):
     #  self.test_template()
 
     token, op = self.find_closest_token(line, col)
-    print(token, op)
+    #  print(token, op)
     if token:
       if op == '::':
         # find target namespace members
