@@ -3,7 +3,6 @@ language: python
 env:
   - CLANG_VERSION=3.6
   - CLANG_VERSION=3.8
-  - CLANG_VERSION=6.0
 
 addons:
   apt:
@@ -11,7 +10,6 @@ addons:
       clang
       libclang-3.6-dev
       libclang-3.8-dev
-      libclang-6.0-dev
       cmake
 
 os: linux
