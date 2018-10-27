@@ -51,6 +51,7 @@ STRUCT_MENU = 'struct'
 USING_MENU = 'using'
 CONSTRUCTOR_MENU = 'constructor'
 DESTRUCTOR_MENU = 'destructor'
+UNKNOWN_MENU = 'unknown'
 
 
 class Source(object):
@@ -79,10 +80,7 @@ class Source(object):
       options=self.options)
     self.get_content(unsaved_files)
 
-    self.complete_function = False
-    self.complete_template = False
-    self.complete_constructor = False
-    self.complete_destructor = False
+    self.complete_full = False
 
   def reparse(self, unsaved_files):
     """
@@ -137,10 +135,14 @@ class Source(object):
     if op_index > end_index and op_index > scope_index:
       pattern = re.compile(r'([^;\}\{]+)(\.|->)')
       match = [i for i in reversed(re.findall(pattern, prev_content))]
+      if '#' in match[0][0]:
+        return None, None
       return match[0][0].strip(), match[0][1]
     elif scope_index > end_index and scope_index > op_index:
       pattern = re.compile(r'([^;\}\{]+)(::)')
       match = [i for i in reversed(re.findall(pattern, prev_content))]
+      if '#' in match[0][0]:
+        return None, None
       return match[0][0].strip(), match[0][1]
     return None, None
 
@@ -192,10 +194,7 @@ class Source(object):
     #  print(names)
 
     def peel(type):
-      #  print(type.kind)
-      if type.kind == TypeKind.RECORD:
-        return type
-      elif type.kind == TypeKind.POINTER:
+      if type.kind == TypeKind.POINTER:
         return peel(type.get_pointee())
       elif type.kind == TypeKind.CONSTANTARRAY:
         return peel(type.get_array_element_type())
@@ -205,33 +204,40 @@ class Source(object):
         return peel(type.get_canonical())
       elif type.kind == TypeKind.ELABORATED:
         return peel(type.get_canonical())
+      return type
 
     identifiers = []
 
     def find(node, index):
-      if node.kind == CursorKind.VAR_DECL:
-        #  print(node.kind, node.displayname, node.location, names[index])
-        if node.displayname == names[index]:
-          t = peel(node.type)
-          if index == len(names) - 1:
-            identifiers.append(t.get_declaration())
-          else:
-            find(t.get_declaration(), index + 1)
-      elif node.kind == CursorKind.CXX_METHOD:
-        if names[index].startswith(node.spelling):
-          t = peel(node.type)
-          if index == len(names) - 1:
-            identifiers.append(t.get_declaration())
-          else:
-            find(t.get_declaration(), index + 1)
-      elif node.kind == CursorKind.FIELD_DECL:
-        if node.displayname == names[index]:
-          t = peel(node.type)
-          if index == len(names) - 1:
-            d = t.get_declaration()
-            identifiers.append(d)
-          else:
-            find(t.get_declaration(), index + 1)
+      if not node:
+        return
+
+      try:
+        if node.kind == CursorKind.VAR_DECL:
+          #  print(node.kind, node.displayname, node.location, names[index])
+          if node.displayname == names[index]:
+            t = peel(node.type)
+            if index == len(names) - 1:
+              identifiers.append(t.get_declaration())
+            else:
+              find(t.get_declaration(), index + 1)
+        elif node.kind == CursorKind.CXX_METHOD:
+          if names[index].startswith(node.spelling):
+            t = peel(node.type)
+            if index == len(names) - 1:
+              identifiers.append(t.get_declaration())
+            else:
+              find(t.get_declaration(), index + 1)
+        elif node.kind == CursorKind.FIELD_DECL:
+          if node.displayname == names[index]:
+            t = peel(node.type)
+            if index == len(names) - 1:
+              d = t.get_declaration()
+              identifiers.append(d)
+            else:
+              find(t.get_declaration(), index + 1)
+      except ValueError:
+        pass
 
       for n in node.get_children():
         find(n, index)
@@ -281,132 +287,19 @@ class Source(object):
     process completion result
     """
 
-    if n.displayname and n.spelling:
-      if n.kind == CursorKind.FUNCTION_DECL:
-        if self.complete_function:
-          return {
-            'word': n.displayname,
-            'kind': n.displayname,
-            'menu': FUNCTION_MENU,
-          }
-        else:
-          return {
-            'word': n.spelling,
-            'kind': n.displayname,
-            'menu': FUNCTION_MENU,
-          }
-      if n.kind == CursorKind.FUNCTION_TEMPLATE:
-        if self.complete_function and self.complete_template:
-          return {
-            'word': n.displayname,
-            'kind': n.displayname,
-            'menu': FUNCTION_MENU,
-          }
-        else:
-          return {
-            'word': n.spelling,
-            'kind': n.displayname,
-            'menu': FUNCTION_MENU,
-          }
-      elif n.kind == CursorKind.CXX_METHOD:
-        if self.complete_function:
-          return {
-            'word': n.displayname,
-            'kind': n.displayname,
-            'menu': METHOD_MENU,
-          }
-        else:
-          return {
-            'word': n.spelling,
-            'kind': n.displayname,
-            'menu': METHOD_MENU,
-          }
-      elif n.kind == CursorKind.FIELD_DECL:
-        return {
-          'word': n.displayname,
-          'kind': n.displayname,
-          'menu': VARIABLE_MENU,
-        }
-      elif n.kind == CursorKind.NAMESPACE_REF or \
-        n.kind == CursorKind.NAMESPACE_ALIAS or \
-        n.kind == CursorKind.NAMESPACE:
-        return {
-          'word': n.displayname,
-          'kind': n.displayname,
-          'menu': NAMESPACE_MENU,
-        }
-      elif n.kind == CursorKind.MACRO_DEFINITION:
-        return {
-          'word': n.displayname,
-          'kind': n.displayname,
-          'menu': MACRO_MENU,
-        }
-      elif n.kind == CursorKind.CLASS_DECL or \
-        n.kind == CursorKind.TYPEDEF_DECL:
-        return {
-          'word': n.displayname,
-          'kind': n.displayname,
-          'menu': CLASS_MENU,
-        }
-      elif n.kind == CursorKind.CLASS_TEMPLATE:
-        if self.complete_template:
-          return {
-            'word': n.displayname,
-            'kind': n.displayname,
-            'menu': CLASS_MENU,
-          }
-        else:
-          return {
-            'word': n.spelling,
-            'kind': n.displayname,
-            'menu': CLASS_MENU,
-          }
-      elif n.kind == CursorKind.STRUCT_DECL:
-        return {
-          'word': n.displayname,
-          'kind': n.displayname,
-          'menu': STRUCT_MENU,
-        }
-      elif n.kind == CursorKind.VAR_DECL:
-        return {
-          'word': n.displayname,
-          'kind': n.displayname,
-          'menu': VARIABLE_MENU,
-        }
-      elif n.kind == CursorKind.USING_DECLARATION:
-        d = n.get_definition()
-        if d and d.displayname:
-          return {
-            'word': d.displayname,
-            'kind': d.displayname,
-            'menu': USING_MENU,
-          }
-      elif n.kind == CursorKind.CONSTRUCTOR:
-        if self.complete_constructor:
-          return {
-            'word': n.displayname,
-            'kind': n.displayname,
-            'menu': CONSTRUCTOR_MENU,
-          }
-        else:
-          return {
-            'word': n.spelling,
-            'kind': n.displayname,
-            'menu': CONSTRUCTOR_MENU,
-          }
-      elif n.kind == CursorKind.DESTRUCTOR:
-        if self.complete_constructor:
-          return {
-            'word': n.displayname,
-            'kind': n.displayname,
-            'menu': DESTRUCTOR_MENU,
-          }
-        else:
-          return {
-            'word': n.spelling,
-            'kind': n.displayname,
-            'menu': DESTRUCTOR_MENU,
-          }
+    if n.displayname:
+      word = n.spelling
+      if self.complete_full or not n.spelling:
+        word = n.displayname
+
+      kind = n.displayname
+      menu = self.get_menu_kind(n.kind)
+
+      return {
+        'word': word,
+        'kind': kind,
+        'menu': menu,
+      }
     return None
 
   def get_completion(self, cursors):
@@ -442,7 +335,7 @@ class Source(object):
     for node in self.tu.cursor.get_children():
       print(node.kind, node.displayname)
 
-  def code_complete(self, line, col):
+  def code_complete_semantic(self, line, col):
     """
     get code completion result at this line and column
     """
@@ -450,7 +343,7 @@ class Source(object):
     #  self.test_template()
 
     token, op = self.find_closest_token(line, col)
-    #  print(token, op)
+    print(token, op)
     if token:
       if op == '::':
         # find target namespace members
@@ -464,6 +357,120 @@ class Source(object):
       # return global visiable functions and namespaces
       cursors = [self.tu.cursor]
     return self.get_completion(cursors)
+
+  def process_clang_result(self, result):
+    result_obj = {}
+    try:
+      s = str(result)
+      #  print(s)
+      attr_pattern = re.compile(r'\{\'([^\']+?)\', (\w+?)\}')
+      attrs = re.findall(attr_pattern, s)
+      #  print(attrs)
+      for i in range(len(attrs)):
+        done = False
+        attr = attrs[i]
+        key = attr[1].strip()
+        value = attr[0].strip()
+        if key == 'LeftParen':
+          full = result_obj['TypedText'] + value
+          for j in range(i, len(attrs)):
+            attr = attrs[j]
+            key = attr[1].strip()
+            value = attr[0].strip()
+            full += value
+            if key == 'RightParen':
+              result_obj['CompleteText'] = full
+              done = True
+              break
+        else:
+          result_obj[key] = value
+        if done:
+          break
+
+      prop_pattern = re.compile(r'([^\|]+?): ([^\|]+)')
+      props = re.findall(prop_pattern, s)
+      for p in props:
+        result_obj[p[0].strip()] = p[1].strip()
+      #  print(props)
+
+      return result_obj, result.kind
+    except Exception:
+      pass
+    return None, None
+
+  def get_menu_kind(self, cursor_kind):
+    if cursor_kind == CursorKind.FUNCTION_DECL or \
+      cursor_kind == CursorKind.FUNCTION_TEMPLATE:
+      return FUNCTION_MENU
+    elif cursor_kind == CursorKind.CXX_METHOD:
+      return METHOD_MENU
+    elif cursor_kind == CursorKind.FIELD_DECL or \
+      cursor_kind == CursorKind.VAR_DECL:
+      return VARIABLE_MENU
+    elif cursor_kind == CursorKind.NAMESPACE_REF or \
+      cursor_kind == CursorKind.NAMESPACE_ALIAS or \
+      cursor_kind == CursorKind.NAMESPACE:
+      return NAMESPACE_MENU,
+    elif cursor_kind == CursorKind.MACRO_DEFINITION:
+      return MACRO_MENU
+    elif cursor_kind == CursorKind.CLASS_DECL or \
+      cursor_kind == CursorKind.TYPEDEF_DECL or \
+      cursor_kind == CursorKind.CLASS_TEMPLATE:
+      return CLASS_MENU
+    elif cursor_kind == CursorKind.STRUCT_DECL:
+      return STRUCT_MENU
+    elif cursor_kind == CursorKind.USING_DECLARATION:
+      return USING_MENU
+    elif cursor_kind == CursorKind.CONSTRUCTOR:
+      return CONSTRUCTOR_MENU
+    elif cursor_kind == CursorKind.DESTRUCTOR:
+      return DESTRUCTOR_MENU
+    return UNKNOWN_MENU
+
+  def process_clang_results(self, results, full_completion=False):
+    processed = []
+    for result in results:
+      r, kind = self.process_clang_result(result)
+      if r:
+        word = r['TypedText']
+        if full_completion and 'CompleteText' in r:
+          word = r['CompleteText']
+
+        kind = 'None'
+        if 'ResultType' in r:
+          kind = r['ResultType']
+
+        menu = self.get_menu_kind(kind)
+
+        info = r['Brief comment']
+        if info == 'None' and 'CompleteText' in r:
+          info = r['CompleteText']
+
+        abbr = r['TypedText']
+
+        processed.append({
+          'word': word,
+          'kind': kind,
+          'menu': menu,
+          'info': info,
+          'abbr': abbr,
+        })
+    return processed
+
+  def code_complete(self, line, col, unsaved_files,
+      include_macros=True, include_code_patterns=True,
+      include_brief_comments=True):
+    cc_results = self.tu.codeComplete(
+      self.filepath,
+      line,
+      col,
+      unsaved_files=unsaved_files,
+      include_macros=include_macros,
+      include_code_patterns=include_code_patterns,
+      include_brief_comments=include_brief_comments)
+    if cc_results:
+      return self.process_clang_results(cc_results.results)
+    return []
 
 
 def get_translation_unit(filepath, flags, all_files):
@@ -522,30 +529,31 @@ def parse_raw_result(raw_result):
 class ClangCompletion(object):
   def __init__(self, vim):
     self.vim = vim
+    self._init_vars()
 
+    #  self._translation_unit_cache = {}
+    #  self._result_cache = {}
+    self._file_contents = {}
+    self._file_sources = {}
+
+  def setup(self):
     # setup libclang
-    clang_version = vim.vars['deoplete#sources#cpp#clang_version']
+    clang_version = self.vim.vars['deoplete#sources#cpp#clang_version']
     libfile = setup_libclang(clang_version)
     self.log('setup libclang: %s' % (libfile))
 
     # create index
     self._index = create_index()
 
-    self._file_contents = {}
-    self._file_sources = {}
-
-    #  self._translation_unit_cache = {}
-    #  self._result_cache = {}
-
-    self._init_vars()
-
   def log(self, msg):
     """
     log message to vim console
     """
 
-    if self.is_debug_enabled:
-      self.vim.command('echom "%s"' % (msg))
+    #  if self.is_debug_enabled:
+    #    self.vim.command('echom "%s"' % (msg))
+
+    self.vim.command('echom "%s"' % (msg))
 
   def _init_vars(self):
     """
@@ -601,10 +609,12 @@ class ClangCompletion(object):
     elif context['filetype'] == 'cpp':
       flags = ['-x', 'c++'] + self._cppflags
     elif context['filetype'] == 'objc':
+      self.log('objc flags')
       flags = ['-ObjC'] + self._objcflags
       include_flags = ['-I%s' % (p)
         for p in self._objc_include_path if os.path.isdir(p)]
     elif context['filetype'] == 'objcpp':
+      self.log('objcpp flags')
       flags = ['-ObjC++'] + self._objcppflags
       include_flags = ['-I%s' % (p)
         for p in self._objcpp_include_path if os.path.isdir(p)]
@@ -645,13 +655,17 @@ class ClangCompletion(object):
 
     filepath = self.get_buffer_name(context)
     if filepath in self._file_sources:
-      self._file_sources[filepath].complete_function = self._full_completion
-      self._file_sources[filepath].complete_template = self._full_completion
+      self._file_sources[filepath].complete_full = self._full_completion
 
       line = self.vim.eval('line(".")')
       col = self.vim.eval('col(".")')
-      results = self._file_sources[filepath].code_complete(line, col)
-      self.log('completion: (%s, %s) | %s' % (line, col, len(results)))
+      # original completion way
+      #  unsaved_files = [(filepath, content)
+      #    for filepath, content in self._file_contents.items()]
+      #  results = self._file_sources[filepath].code_complete(line, col,
+      #    unsaved_files)
+      results = self._file_sources[filepath].code_complete_semantic(line, col)
+      self.log('%s completion: (%s, %s) | %s' % (filepath, line, col, len(results)))
       return results
     return []
 
