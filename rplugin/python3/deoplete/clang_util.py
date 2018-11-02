@@ -587,8 +587,7 @@ class ClangCompletion(object):
     retrieve buffer name from current content
     """
 
-    buffer_name = context['bufname']
-    return os.path.join(context['cwd'], buffer_name)
+    return self.vim.eval('expand("%:p")')
 
   def _update_file_content(self, context):
     """
@@ -628,6 +627,7 @@ class ClangCompletion(object):
       flags = ['-x', 'c++'] + self._cppflags
 
     flags += include_flags
+    flags += ['-fsyntax-only']
     return flags
 
   def _update_file_source(self, context):
@@ -638,9 +638,13 @@ class ClangCompletion(object):
     filepath = self.get_buffer_name(context)
     unsaved_files = [(filepath, content)
       for filepath, content in self._file_contents.items()]
+    self.log(filepath)
+    self.log(self._file_sources)
     if filepath in self._file_sources:
+      self.log('reparse')
       self._file_sources[filepath].reparse(unsaved_files)
     else:
+      self.log('create new source')
       args = self._get_source_args(context)
       source = Source(self._index, filepath, args, unsaved_files)
       self._file_sources[filepath] = source
