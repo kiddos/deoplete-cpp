@@ -638,13 +638,9 @@ class ClangCompletion(object):
     filepath = self.get_buffer_name(context)
     unsaved_files = [(filepath, content)
       for filepath, content in self._file_contents.items()]
-    self.log(filepath)
-    self.log(self._file_sources)
     if filepath in self._file_sources:
-      self.log('reparse')
       self._file_sources[filepath].reparse(unsaved_files)
     else:
-      self.log('create new source')
       args = self._get_source_args(context)
       source = Source(self._index, filepath, args, unsaved_files)
       self._file_sources[filepath] = source
