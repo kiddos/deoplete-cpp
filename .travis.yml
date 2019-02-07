@@ -1,35 +1,33 @@
 language: python
 
-env:
-  - CLANG_VERSION=6.0
-
 addons:
   apt:
     sources:
-    - ubuntu-toolchain-r-test
-    - llvm-toolchain-trusty-6.0
-    - sourceline: 'deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-6.0 main'
-      key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+      - george-edison55-precise-backports
 
     packages:
-      - clang
-      - libclang-3.6-dev
-      - libclang-3.8-dev
-      - libclang-6.0-dev
       - cmake
+      - build-essential
+      - clang
+      - swig
+      - libpython3-dev
+      - libpcl-dev
+      - libeigen3-dev
 
 os: linux
 
 python:
-  - "3.4"
   - "3.5"
-  - "3.6"
 
 install:
-  - pip install clang==$CLANG_VERSION
+  - mkdir build
+  - cd build
+  - cmake ..
+  - make
+  - make install
+  - cd ..
 
 script:
-  - python test/test_cmake_command.py
-  - python rplugin/python3/deoplete/test_clang_code_completion.py TestCppSourceBasic
-  - python rplugin/python3/deoplete/test_clang_code_completion.py TestStdSource
-  - python rplugin/python3/deoplete/test_clang_code_completion.py TestCSourceBasic
+  - cd build
+  - ./bin/test_clang_completer
+  - cd ..
