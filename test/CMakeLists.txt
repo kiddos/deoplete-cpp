@@ -12,7 +12,5 @@ if (GTEST_FOUND)
   add_executable(test_clang_completer test_clang_completer.cc)
   target_link_libraries(test_clang_completer
     clang_completer ${GTEST_BOTH_LIBRARIES} pthread)
-
-  add_test(test_clang_engine COMMAND ./bin/test_clang_completer)
 endif ()
 
