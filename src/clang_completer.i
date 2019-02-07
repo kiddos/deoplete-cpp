@@ -9,6 +9,8 @@
 #include "argument_manager.h"
 #include "c_argument_manager.h"
 #include "cpp_argument_manager.h"
+#include "objc_argument_manager.h"
+#include "objcpp_argument_manager.h"
 %}
 
 class ClangCompleter {
@@ -63,4 +65,14 @@ class CPPArgumentManager : public ArgumentManager {
   CPPArgumentManager();
 
   void SetCPPStandard(int standard);
+};
+
+class OBJCArgumentManager : public ArgumentManager {
+ public:
+  OBJCArgumentManager();
+};
+
+class OBJCPPArgumentManager : public ArgumentManager {
+ public:
+  OBJCPPArgumentManager();
 };
