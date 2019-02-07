@@ -11,26 +11,24 @@ try:
   current = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
   sys.path.insert(0, current)
 
-  from clang_util import ClangCompletion
+  from clang_source_base import import_library
+  from clang_source_base import ClangDeopleteSourceBase
+  from clang_source_base import ClangCompletionWrapper
 except Exception as e:
   pass
 
 
-class Source(Base, ClangCompletion):
+class Source(Base, ClangDeopleteSourceBase):
   def __init__(self, vim):
-    """
-    Source constructor.  It is always called in initializing.  It
-    must call super() constructor.  This function takes {self} and
-    {vim} as its parameters.
-    """
-
     Base.__init__(self, vim)
-    ClangCompletion.__init__(self, vim)
+    argument_manager = self.setup_arg_manager(vim)
+    completer = ClangCompletionWrapper(argument_manager)
+    ClangDeopleteSourceBase.__init__(self, vim, completer)
 
     # The description of a source.
     self.description = 'clang cpp completion'
     # Available filetype list.
-    self.filetypes = ['c', 'cpp', 'objc', 'objcpp']
+    self.filetypes = ['cpp']
     # The mark of a source
     self.mark = '[c++]'
     # The unique name of a source.
@@ -38,92 +36,66 @@ class Source(Base, ClangCompletion):
     # Source priority.  Higher values imply higher priority.
     self.rank = 600
 
-    self.max_menu_width = 160
-    self.max_abbr_width = 160
+  def setup_arg_manager(self, vim):
+    clang_completer = import_library()
+    argument_manager = clang_completer.CPPArgumentManager()
 
-  def on_init(self, context):
-    """
-    It will be called before the source attribute is called.
-    It takes {self} and {context} as its parameter.
-    It should be used to initialize the internal variables.
+    v = vim.vars
+    definitions = v['deoplete#sources#cpp#cpp_definitions']
+    include_paths = v['deoplete#sources#cpp#cpp_include_paths']
 
-    context
-      A dictionary to give context information.
-      The followings are the primary information.
+    try:
+      standard = int(v['deoplete#sources#cpp#cpp_standard'])
+    except Exception:
+      standard = 11
 
-      bufnr			(Integer)
-          The current effective buffer number in event.
-          Note: It may not be same with current buffer.
+    for ip in include_paths:
+      argument_manager.AddIncludePath(ip)
+    for d in definitions:
+      argument_manager.AddDefinition(d)
+    argument_manager.SetCPPStandard(standard)
 
-      candidates		(List[dict])
-          The current candidates.
+    self.maybe_add_qt_include_paths(v, argument_manager)
+    self.maybe_add_ros_include_paths(v, argument_manager)
+    self.maybe_add_cuda_include_paths(v, argument_manager)
+    return argument_manager
 
-      complete_position	(Integer)
-          The complete position of current source.
+  def maybe_add_qt_include_paths(self, v, argument_manager):
+    qt_dev = v['deoplete#sources#cpp#cpp_enable_qt_dev']
+    qt_root = v['deoplete#sources#cpp#cpp_qt_root']
 
-          " Example:
-          pattern : r'fruits\.'
+    if qt_dev:
+      argument_manager.AddIncludePath(qt_root)
+      self.log(qt_root)
+      for submod in os.listdir(qt_root):
+        submod_path = os.path.join(qt_root, submod)
+        if os.path.isdir(submod_path):
+          argument_manager.AddIncludePath(submod_path)
 
-              01234567
-          input   : fruits.
+  def maybe_add_ros_include_paths(self, v, argument_manager):
+    ros_dev = v['deoplete#sources#cpp#cpp_enable_ros_dev']
+    ros_root = v['deoplete#sources#cpp#cpp_ros_root']
+    ros_user_ws = os.path.expanduser(v['deoplete#sources#cpp#cpp_ros_user_ws'])
 
-          complete_position : 7
+    if ros_dev:
+      local_dev = os.path.join('devel', 'include')
+      argument_manager.AddIncludePath(local_dev)
+      argument_manager.AddIncludePath(os.path.join('..', local_dev))
+      argument_manager.AddIncludePath(os.path.join('..', '..', local_dev))
+      argument_manager.AddIncludePath(os.path.join(ros_root, 'include'))
+      argument_manager.AddIncludePath(
+        os.path.join(ros_user_ws, 'devel', 'include'))
 
-      complete_str		(String)
-          The complete string of current source.
+  def maybe_add_cuda_include_paths(self, v, argument_manager):
+    cuda_dev = v['deoplete#sources#cpp#cpp_enable_cuda_dev']
+    cuda_root = v['deoplete#sources#cpp#cpp_cuda_root']
 
-      event			(String)
-          The current event name.
-
-      filetype		(String)
-          Current 'filetype'.
-
-      filetypes		(List[str])
-          It contains current 'filetype', same
-          filetypes and composite filetypes.
-
-      input			(String)
-          The input string of the current line, namely the part
-          before the cursor.
-
-      is_async		(Bool)
-          If the gather is asynchronous, the source must set
-          it to "True". A typical strategy for an asynchronous
-          gather_candidates method to use this flag is to
-          set is_async flag to True while results are being
-          produced in the background (optionally, returning them
-          as they become ready). Once background processing
-          has completed, is_async flag should be set to False
-          indicating that this is the last portion of the
-          candidates.
-    """
-
-    # cache the file
-    self.setup()
-    self._update(context)
+    if cuda_dev:
+      argument_manager.AddIncludePath(cuda_root)
+      argument_manager.AddIncludePath(os.path.join(cuda_root, 'include'))
 
   def on_event(self, context):
-    """
-    Called for |InsertEnter|, |BufWritePost|, |BufReadPost| and
-    |BufDelete| autocommands, through |deoplete#send_event()|.
-    """
-
-    self._update(context)
+    self.update(context)
 
   def gather_candidates(self, context):
-    """
-    It is called to gather candidates.
-    It takes {self} and {context} as its parameter and returns a
-    list of {candidate}.
-    If the error is occurred, it must return None.
-    {candidate} must be String or Dictionary contains
-    |deoplete-candidate-attributes|.
-    Here, {context} is the context information when the source is
-    called (|deoplete-notation-{context}|).
-    Note: The source must not filter the candidates by user input.
-    It is |deoplete-filters| work.  If the source filter the
-    candidates, user cannot filter the candidates by fuzzy match.
-    """
-
-    self._update(context)
-    return self._get_candidates(context)
+    return self.get_candidates(context)
