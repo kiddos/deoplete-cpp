@@ -5,6 +5,8 @@
 #include "c_argument_manager.h"
 #include "clang_completer.h"
 #include "cpp_argument_manager.h"
+#include "objc_argument_manager.h"
+#include "objcpp_argument_manager.h"
 
 class TestClangCompleter : public ::testing::Test {
  public:
@@ -12,6 +14,9 @@ class TestClangCompleter : public ::testing::Test {
     cpp_arg_manager_.AddIncludePath("/usr/local/include");
     cpp_arg_manager_.AddIncludePath("/usr/include/pcl-1.7");
     cpp_arg_manager_.AddIncludePath("/usr/include/eigen3");
+
+    objc_arg_manager_.AddIncludePath("/usr/include/GNUstep");
+    objcpp_arg_manager_.AddIncludePath("/usr/include/GNUstep");
   }
 
   void SetUp() override { start_ = std::chrono::system_clock::now(); }
@@ -44,6 +49,8 @@ class TestClangCompleter : public ::testing::Test {
   ClangCompleter engine_;
   CArgumentManager c_arg_manager_;
   CPPArgumentManager cpp_arg_manager_;
+  OBJCArgumentManager objc_arg_manager_;
+  OBJCPPArgumentManager objcpp_arg_manager_;
 
   void EchoResults(const std::vector<ClangCompleter::Result>& results) {
     for (int i = 0; i < results.size(); ++i) {
@@ -198,6 +205,24 @@ TEST_F(TestClangCompleter, TestCannotAddUnsavedFileWithoutContent) {
   std::string file = "./test/unsaved_file.cc";
   engine_.AddFile(file, cpp_arg_manager_);
   EXPECT_EQ(engine_.file_count(), 0);
+}
+
+TEST_F(TestClangCompleter, TestObjcBasicLibrary) {
+  std::string file = "./test/sample1.m";
+  std::string content = engine_.GetFileContent(file);
+  std::vector<ClangCompleter::Result> results =
+      engine_.CodeComplete(file, content, 6, 1, objc_arg_manager_);
+  EXPECT_TRUE(ContainResult(results, "@\""));
+  EXPECT_TRUE(ContainResult(results, "@{"));
+}
+
+TEST_F(TestClangCompleter, TestObjcppBasicLibrary) {
+  std::string file = "./test/sample1.m";
+  std::string content = engine_.GetFileContent(file);
+  std::vector<ClangCompleter::Result> results =
+      engine_.CodeComplete(file, content, 6, 1, objcpp_arg_manager_);
+  EXPECT_TRUE(ContainResult(results, "@\""));
+  EXPECT_TRUE(ContainResult(results, "@{"));
 }
 
 int main(int argc, char** argv) {
