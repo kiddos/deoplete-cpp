@@ -66,7 +66,6 @@ class Source(Base, ClangDeopleteSourceBase):
 
     if qt_dev:
       argument_manager.AddIncludePath(qt_root)
-      self.log(qt_root)
       for submod in os.listdir(qt_root):
         submod_path = os.path.join(qt_root, submod)
         if os.path.isdir(submod_path):
