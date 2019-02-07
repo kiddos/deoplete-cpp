@@ -3,49 +3,128 @@ if exists("g:loaded_deoplete_cpp")
 endif
 let g:loaded_deoplete_cpp = 1
 
-let g:deoplete#sources#cpp#clang_version =
-\   get(g:, "deoplete#sources#cpp#clang_version", "6.0")
+" c
+let g:deoplete#sources#c#standard =
+\   get(g:, "deoplete#sources#c#standard", 99)
+
+let g:deoplete#sources#c#definitions =
+\   get(g:, "deoplete#sources#c#definitions", ['-DDEBUG'])
+
+let g:deoplete#sources#c#include_paths =
+\   get(g:, "deoplete#sources#c#include_paths", [
+\   "/usr/local/include",
+\   ])
+
+let g:deoplete#sources#c#enable_kernel_dev =
+\   get(g:, "deoplete#sources#c#enable_kernel_dev", 1)
+
+let g:deoplete#sources#c#kernel_root =
+\   get(g:, "deoplete#sources#c#kernel_root",
+\   '/usr/src/linux-headers-4.4.0-116')
+
+let g:deoplete#sources#c#enable_platformio_dev =
+\   get(g:, "deoplete#sources#c#enable_platformio_dev", 1)
+
+let g:deoplete#sources#c#platformio_root =
+\   get(g:, "deoplete#c#arduino#platformio_root",
+\   '~/.platformio')
 
 
-" flags
-let g:deoplete#sources#cpp#cflags =
-\   get(g:, "deoplete#sources#cpp#cflags",
-\   ["-std=c89"])
+" cpp
+let g:deoplete#sources#cpp#standard =
+\   get(g:, "deoplete#sources#cpp#standard", 14)
 
-let g:deoplete#sources#cpp#cppflags =
-\   get(g:, "deoplete#sources#cpp#cppflags",
-\   ["-std=c++11"])
+let g:deoplete#sources#cpp#definitions =
+\   get(g:, "deoplete#sources#cpp#definitions", ['-DDEBUG'])
 
-let g:deoplete#sources#cpp#objcflags =
-\   get(g:, "deoplete#sources#cpp#objcflags",
-\   ["-Wall", "-Wextra"])
+let g:deoplete#sources#cpp#include_paths =
+\   get(g:, "deoplete#sources#cpp#include_paths", [
+\   "/usr/local/include",
+\   ".",
+\   'src',
+\   "build",
+\   "include",
+\   "third_party",
+\   'lib',
+\   "..",
+\   "../src",
+\   "../include",
+\   "../build",
+\   '../lib',
+\   "../third_party",
+\   "../../src",
+\   "../../include",
+\   '../../lib',
+\   "../../third_party"
+\   ])
 
-let g:deoplete#sources#cpp#objcppflags =
-\   get(g:, "deoplete#sources#cpp#objcppflags",
-\   ["-Wall", "-Wextra"])
+let g:deoplete#sources#cpp#enable_qt_dev =
+\   get(g:, "deoplete#sources#cpp#enable_qt_dev", 1)
 
-" include path
-let g:deoplete#sources#cpp#c_include_path =
-\   get(g:, "deoplete#sources#cpp#c_include_path",
-\   ["/usr/local/include", '.'])
+let g:deoplete#sources#cpp#qt_root =
+\   get(g:, "deoplete#sources#cpp#qt_root",
+\   '/usr/include/x86_64-linux-gnu/qt5')
 
-let g:deoplete#sources#cpp#cpp_include_path =
-\   get(g:, "deoplete#sources#cpp#cpp_include_path",
-\   ["/usr/local/include", "."])
+let g:deoplete#sources#cpp#enable_ros_dev =
+\   get(g:, "deoplete#sources#cpp#enable_ros_dev", 1)
 
-let g:deoplete#sources#cpp#objc_include_path =
-\   get(g:, "deoplete#sources#cpp#objc_include_path",
-\   ["/usr/local/include", "/usr/include/GNUstep"])
+let g:deoplete#sources#cpp#ros_root =
+\   get(g:, "deoplete#sources#cpp#ros_root",
+\   '/opt/ros/kinetic')
 
-let g:deoplete#sources#cpp#objcpp_include_path =
-\   get(g:, "deoplete#sources#cpp#objcpp_include_path",
-\   ["/usr/local/include", "/usr/include/GNUstep"])
+let g:deoplete#sources#cpp#ros_user_ws =
+\   get(g:, "deoplete#sources#cpp#ros_user_ws",
+\   '~/catkin_kinetic')
 
-" cuda path
-let g:deoplete#sources#cpp#cuda_path =
-\   get(g:, "deoplete#sources#cpp#cuda_path",
-\   ["/usr/local/cuda/include"])
+let g:deoplete#sources#cpp#enable_cuda_dev =
+\   get(g:, "deoplete#sources#cpp#enable_cuda_dev", 1)
 
-" complete function and template
-let g:deoplete#sources#cpp#full_completion =
-\   get(g:, "deoplete#sources#cpp#full_completion", 0)
+let g:deoplete#sources#cpp#cuda_root =
+\   get(g:, "deoplete#sources#cpp#cuda_root",
+\   '/usr/local/cuda')
+
+
+" objc/objc++
+let g:deoplete#sources#objc#definitions =
+\   get(g:, "deoplete#sources#objc#definitions", ['-DDEBUG'])
+
+let g:deoplete#sources#objc#include_paths =
+\   get(g:, "deoplete#sources#objc#include_paths", [
+\   "/usr/local/include",
+\   "/usr/include/GNUstep",
+\   "/usr/include/GNUstep/Foundation",
+\   "/usr/include/GNUstep/gnustep",
+\   "/usr/include/GNUstep/GNUstepBase",
+\   ])
+
+
+" arduino
+let g:deoplete#sources#arduino#definitions =
+\   get(g:, "deoplete#sources#arduino#definitions", ['-DDEBUG'])
+
+let g:deoplete#sources#arduino#include_paths =
+\   get(g:, "deoplete#sources#arduino#include_paths", [
+\   ".",
+\   'src',
+\   "build",
+\   "include",
+\   "third_party",
+\   'lib',
+\   "..",
+\   "../src",
+\   "../include",
+\   "../build",
+\   '../lib',
+\   "../third_party",
+\   "../../src",
+\   "../../include",
+\   '../../lib',
+\   "../../third_party"
+\   ])
+
+let g:deoplete#sources#arduino#enable_platformio_dev =
+\   get(g:, "deoplete#sources#arduino#enable_platformio_dev", 1)
+
+let g:deoplete#sources#arduino#platformio_root =
+\   get(g:, "deoplete#sources#arduino#platformio_root",
+\   '~/.platformio')
