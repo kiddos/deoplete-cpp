@@ -26,7 +26,7 @@ class Source(Base, ClangDeopleteSourceBase):
     ClangDeopleteSourceBase.__init__(self, vim, completer)
 
     # The description of a source.
-    self.description = 'clang cpp completion'
+    self.description = 'clang completion'
     # Available filetype list.
     self.filetypes = ['cpp']
     # The mark of a source
@@ -41,11 +41,11 @@ class Source(Base, ClangDeopleteSourceBase):
     argument_manager = clang_completer.CPPArgumentManager()
 
     v = vim.vars
-    definitions = v['deoplete#sources#cpp#cpp_definitions']
-    include_paths = v['deoplete#sources#cpp#cpp_include_paths']
+    definitions = v['deoplete#sources#cpp#definitions']
+    include_paths = v['deoplete#sources#cpp#include_paths']
 
     try:
-      standard = int(v['deoplete#sources#cpp#cpp_standard'])
+      standard = int(v['deoplete#sources#cpp#standard'])
     except Exception:
       standard = 11
 
@@ -61,8 +61,8 @@ class Source(Base, ClangDeopleteSourceBase):
     return argument_manager
 
   def maybe_add_qt_include_paths(self, v, argument_manager):
-    qt_dev = v['deoplete#sources#cpp#cpp_enable_qt_dev']
-    qt_root = v['deoplete#sources#cpp#cpp_qt_root']
+    qt_dev = v['deoplete#sources#cpp#enable_qt_dev']
+    qt_root = v['deoplete#sources#cpp#qt_root']
 
     if qt_dev:
       argument_manager.AddIncludePath(qt_root)
@@ -73,9 +73,9 @@ class Source(Base, ClangDeopleteSourceBase):
           argument_manager.AddIncludePath(submod_path)
 
   def maybe_add_ros_include_paths(self, v, argument_manager):
-    ros_dev = v['deoplete#sources#cpp#cpp_enable_ros_dev']
-    ros_root = v['deoplete#sources#cpp#cpp_ros_root']
-    ros_user_ws = os.path.expanduser(v['deoplete#sources#cpp#cpp_ros_user_ws'])
+    ros_dev = v['deoplete#sources#cpp#enable_ros_dev']
+    ros_root = v['deoplete#sources#cpp#ros_root']
+    ros_user_ws = os.path.expanduser(v['deoplete#sources#cpp#ros_user_ws'])
 
     if ros_dev:
       local_dev = os.path.join('devel', 'include')
@@ -87,8 +87,8 @@ class Source(Base, ClangDeopleteSourceBase):
         os.path.join(ros_user_ws, 'devel', 'include'))
 
   def maybe_add_cuda_include_paths(self, v, argument_manager):
-    cuda_dev = v['deoplete#sources#cpp#cpp_enable_cuda_dev']
-    cuda_root = v['deoplete#sources#cpp#cpp_cuda_root']
+    cuda_dev = v['deoplete#sources#cpp#enable_cuda_dev']
+    cuda_root = v['deoplete#sources#cpp#cuda_root']
 
     if cuda_dev:
       argument_manager.AddIncludePath(cuda_root)
