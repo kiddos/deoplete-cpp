@@ -450,6 +450,67 @@ class TestArduinoSource(unittest.TestCase):
 def main():
   unittest.main()
 
+  #  cpp_arg = clang_completer.CPPArgumentManager()
+  #  completer = ClangCompletionWrapper(cpp_arg)
+
+  #  source = './test_sources/source.cc'
+  #  with open(source, 'r') as f:
+  #    content = f.read()
+
+  #  results = completer.get_candidates(source, content, 8, 5)
+  #  for result in results:
+  #    print(result)
+
+  #  def _init_vars(self):
+  #    """
+  #    get variables settings from vim
+  #    """
+
+  #    v = self.vim.vars
+  #    # include flags
+  #    self._cflags = v['deoplete#sources#cpp#cflags']
+  #    self._cppflags = v['deoplete#sources#cpp#cppflags']
+  #    self._objcflags = v['deoplete#sources#cpp#objcflags']
+  #    self._objcppflags = v['deoplete#sources#cpp#objcppflags']
+
+  #    # include path
+  #    self._c_include_path = v['deoplete#sources#cpp#c_include_path']
+  #    self._cpp_include_path = v['deoplete#sources#cpp#cpp_include_path']
+  #    self._objc_include_path = v['deoplete#sources#cpp#objc_include_path']
+  #    self._objcpp_include_path = v['deoplete#sources#cpp#objcpp_include_path']
+
+  #  def _get_source_args(self, context):
+    """
+    get source arguments with include flags and compile flags
+    """
+
+    include_flags = ['-I%s' % (p)
+      for p in self._cpp_include_path if os.path.isdir(p)]
+    flags = []
+    if context['filetype'] == 'c':
+      flags = ['-x', 'c'] + self._cflags
+      include_flags = ['-I%s' % (p)
+        for p in self._c_include_path if os.path.isdir(p)]
+    elif context['filetype'] == 'cpp':
+      flags = ['-x', 'c++'] + self._cppflags
+    elif context['filetype'] == 'objc':
+      self.log('objc flags')
+      flags = ['-ObjC'] + self._objcflags
+      include_flags = ['-I%s' % (p)
+        for p in self._objc_include_path if os.path.isdir(p)]
+    elif context['filetype'] == 'objcpp':
+      self.log('objcpp flags')
+      flags = ['-ObjC++'] + self._objcppflags
+      include_flags = ['-I%s' % (p)
+        for p in self._objcpp_include_path if os.path.isdir(p)]
+    else:
+      # default to cpp flag if filetype not known
+      flags = ['-x', 'c++'] + self._cppflags
+
+    flags += include_flags
+    flags += ['-fsyntax-only']
+    return flags
+
 
 if __name__ == '__main__':
   main()
