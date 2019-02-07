@@ -2,7 +2,6 @@
 
 import os
 import sys
-import re
 
 from .base import Base
 from deoplete.util import load_external_module
@@ -12,18 +11,22 @@ try:
   current = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
   sys.path.insert(0, current)
 
-  from clang_util import ClangCompletion
+  from clang_source_base import import_library
+  from clang_source_base import ClangDeopleteSourceBase
+  from clang_source_base import ClangCompletionWrapper
 except Exception as e:
   pass
 
 
-class Source(Base, ClangCompletion):
+class Source(Base, ClangDeopleteSourceBase):
   def __init__(self, vim):
     Base.__init__(self, vim)
-    ClangCompletion.__init__(self, vim)
+    argument_manager = self.setup_arg_manager(vim)
+    completer = ClangCompletionWrapper(argument_manager)
+    ClangDeopleteSourceBase.__init__(self, vim, completer)
 
     # The description of a source.
-    self.description = 'clang cpp completion'
+    self.description = 'clang completion'
     # Available filetype list.
     self.filetypes = ['arduino']
     # The mark of a source
@@ -33,101 +36,49 @@ class Source(Base, ClangCompletion):
     # Source priority.  Higher values imply higher priority.
     self.rank = 600
 
-    self.max_menu_width = 160
-    self.max_abbr_width = 160
+  def setup_arg_manager(self, vim):
+    clang_completer = import_library()
+    argument_manager = clang_completer.CPPArgumentManager()
 
-  def _setup_arduino_path(self):
-    home_dir = os.environ['HOME']
-    platformio_dir = os.path.join(home_dir, '.platformio', 'packages')
-    # arduino
-    self._cpp_include_path.append(os.path.join(platformio_dir,
-      'framework-arduinoavr/cores/arduino/'))
-    # simba
-    self._cpp_include_path.append(os.path.join(platformio_dir,
-      'framework-simba/src'))
-    # stm32 boards
-    self._cpp_include_path.append(os.path.join(platformio_dir,
-      'framework-stm32cube/f0/Drivers/STM32F0xx_HAL_Driver/Inc'))
-    self._cpp_include_path.append(os.path.join(platformio_dir,
-      'framework-stm32cube/f0/Drivers/CMSIS/Include'))
-    self._cpp_include_path.append(os.path.join(platformio_dir,
-      'framework-stm32cube/f1/Drivers/STM32F1xx_HAL_Driver/Inc'))
-    self._cpp_include_path.append(os.path.join(platformio_dir,
-      'framework-stm32cube/f1/Drivers/CMSIS/Include'))
-    self._cpp_include_path.append(os.path.join(platformio_dir,
-      'framework-stm32cube/f2/Drivers/STM32F2xx_HAL_Driver/Inc'))
-    self._cpp_include_path.append(os.path.join(platformio_dir,
-      'framework-stm32cube/f2/Drivers/CMSIS/Include'))
-    self._cpp_include_path.append(os.path.join(platformio_dir,
-      'framework-stm32cube/f3/Drivers/STM32F3xx_HAL_Driver/Inc'))
-    self._cpp_include_path.append(os.path.join(platformio_dir,
-      'framework-stm32cube/f3/Drivers/CMSIS/Include'))
-    self._cpp_include_path.append(os.path.join(platformio_dir,
-      'framework-stm32cube/f4/Drivers/STM32F4xx_HAL_Driver/Inc'))
-    self._cpp_include_path.append(os.path.join(platformio_dir,
-      'framework-stm32cube/f4/Drivers/CMSIS/Include'))
-    self._cpp_include_path.append(os.path.join(platformio_dir,
-      'framework-stm32cube/f7/Drivers/STM32F7xx_HAL_Driver/Inc'))
-    self._cpp_include_path.append(os.path.join(platformio_dir,
-      'framework-stm32cube/f7/Drivers/CMSIS/Include'))
-    self._cpp_include_path.append(os.path.join(platformio_dir,
-      'framework-stm32cube/l0/Drivers/STM32L0xx_HAL_Driver/Inc'))
-    self._cpp_include_path.append(os.path.join(platformio_dir,
-      'framework-stm32cube/l0/Drivers/CMSIS/Include'))
-    self._cpp_include_path.append(os.path.join(platformio_dir,
-      'framework-stm32cube/l1/Drivers/STM32L1xx_HAL_Driver/Inc'))
-    self._cpp_include_path.append(os.path.join(platformio_dir,
-      'framework-stm32cube/l1/Drivers/CMSIS/Include'))
-    self._cpp_include_path.append(os.path.join(platformio_dir,
-      'framework-stm32cube/l4/Drivers/STM32L4xx_HAL_Driver/Inc'))
-    self._cpp_include_path.append(os.path.join(platformio_dir,
-      'framework-stm32cube/l4/Drivers/CMSIS/Include'))
+    v = vim.vars
+    definitions = v['deoplete#sources#arduino#definitions']
+    include_paths = v['deoplete#sources#arduino#include_paths']
 
-    arduino_libs = os.path.join(platformio_dir,
-      'framework-arduinoavr/libraries')
-    for lib in os.listdir(arduino_libs):
-      lib_path = os.path.join(arduino_libs, lib, 'src')
-      self._cpp_include_path.append(lib_path)
+    try:
+      standard = int(v['deoplete#sources#arduino#standard'])
+    except Exception:
+      standard = 11
 
-    self._padd_include = 0
+    for ip in include_paths:
+      argument_manager.AddIncludePath(ip)
+    for d in definitions:
+      argument_manager.AddDefinition(d)
+    argument_manager.SetCPPStandard(standard)
 
-  def _add_pio_libs(self, context):
-    current_path = context['cwd']
-    lib_folder = os.path.join(current_path, '.piolibdeps')
-    if os.path.isdir(lib_folder):
-      libs = os.listdir(lib_folder)
-      for l in libs:
-        self._cpp_include_path.append(os.path.join(lib_folder, l))
+    self.maybe_add_pio_include_paths(v, argument_manager)
+    return argument_manager
 
-  def on_init(self, context):
-    self._add_pio_libs(context)
-    # cache the file
-    self.setup()
-    self._update(context)
+  def maybe_add_pio_include_paths(self, v, argument_manager):
+    pio_dev = v['deoplete#sources#arduino#enable_platformio_dev']
+    pio_root = os.path.expanduser(v['deoplete#sources#arduino#platformio_root'])
+
+    if pio_dev:
+      avr_path = os.path.join(pio_root,
+          'packages', 'framework-arduinoavr', 'cores', 'arduino')
+      if os.path.isdir(avr_path):
+        argument_manager.AddIncludePath(avr_path)
+
+      stm32 = os.path.join(pio_root, 'packages', 'framework-arduinostm32')
+      if os.path.isdir(stm32):
+        for p in os.listdir(stm32):
+          if p not in ['.', '..']:
+            stm32_platform = os.path.join(p)
+            if os.path.isdir(stm32_platform):
+              stm32_path = os.path.join(stm32_platform, 'cores', 'maple')
+              argument_manager.AddIncludePath(stm32_path)
 
   def on_event(self, context):
-    self._update(context)
-
-  def get_buffer_name(self, context):
-    buffer_name = context['bufname'] + '.cc'
-    return os.path.join(context['cwd'], buffer_name)
-
-  def _update_file_content(self, context):
-    filepath = self.get_buffer_name(context)
-    content = '\n'.join(self.vim.current.buffer)
-
-    include_pattern = re.compile(r'\s*#include\s*<Arduino.h>')
-    if not include_pattern.findall(content):
-      content = '#include <Arduino.h>\n' + content
-      self._padd_include = 1
-
-    self._file_contents[filepath] = content
-
-  def _get_cursor_pos(self):
-    line = self.vim.eval('line(".")') + self._padd_include
-    col = self.vim.eval('col(".")')
-    return line, col
+    self.update(context)
 
   def gather_candidates(self, context):
-    self._update(context)
-    return self._get_candidates(context)
+    return self.get_candidates(context)
