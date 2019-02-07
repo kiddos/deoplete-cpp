@@ -7,8 +7,6 @@ addons:
       - clang
       - swig
       - libpython3-dev
-      - libpcl-dev
-      - libeigen3-dev
 
 os: linux
 
@@ -30,5 +28,3 @@ install:
 
 script:
   - cd build
-  - ./bin/test_clang_completer
-  - cd ..
