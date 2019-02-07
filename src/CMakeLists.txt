@@ -5,7 +5,9 @@ file(GLOB SOURCE_FILES
   clang_completer.*
   argument_manager.*
   c_argument_manager.*
-  cpp_argument_manager.*)
+  cpp_argument_manager.*
+  objc_argument_manager.*
+  objcpp_argument_manager.*)
 add_library(clang_completer ${SOURCE_FILES})
 target_link_libraries(clang_completer clang)
 target_compile_definitions(clang_completer
