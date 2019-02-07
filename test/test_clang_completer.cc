@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include "c_argument_manager.h"
 #include "clang_completer.h"
 #include "cpp_argument_manager.h"
 
@@ -41,6 +42,7 @@ class TestClangCompleter : public ::testing::Test {
   std::chrono::system_clock::time_point start_, end_;
 
   ClangCompleter engine_;
+  CArgumentManager c_arg_manager_;
   CPPArgumentManager cpp_arg_manager_;
 
   void EchoResults(const std::vector<ClangCompleter::Result>& results) {
@@ -58,7 +60,7 @@ TEST_F(TestClangCompleter, TestCStdIOLibrary) {
   std::string file = "./test/sample1.c";
   std::string content = engine_.GetFileContent(file);
   std::vector<ClangCompleter::Result> results =
-      engine_.CodeComplete(file, content, 5, 1, cpp_arg_manager_);
+      engine_.CodeComplete(file, content, 5, 1, c_arg_manager_);
 
   // test common function exists
   EXPECT_TRUE(ContainResult(results, "printf"));
@@ -85,11 +87,19 @@ TEST_F(TestClangCompleter, TestCStdIOLibrary) {
   EXPECT_TRUE(ContainResult(results, "stderr"));
 }
 
-TEST_F(TestClangCompleter, TestCStdIOLibrary) {
-  std::string file = "./test/sample1.c";
+TEST_F(TestClangCompleter, TestCCustomDataStructure) {
+  std::string file = "./test/sample2.c";
   std::string content = engine_.GetFileContent(file);
   std::vector<ClangCompleter::Result> results =
-      engine_.CodeComplete(file, content, 5, 1, cpp_arg_manager_);
+      engine_.CodeComplete(file, content, 24, 5, c_arg_manager_);
+
+  EXPECT_TRUE(ContainResult(results, "i"));
+  EXPECT_TRUE(ContainResult(results, "d"));
+
+  std::vector<ClangCompleter::Result> results2 =
+      engine_.CodeComplete(file, content, 25, 8, c_arg_manager_);
+  EXPECT_TRUE(ContainResult(results, "i"));
+  EXPECT_TRUE(ContainResult(results, "d"));
 }
 
 TEST_F(TestClangCompleter, TestDefaultNamespace) {
