@@ -77,7 +77,8 @@ class Source(Base, ClangDeopleteSourceBase):
         argument_manager.AddIncludePath(avr_path)
 
       # stm32
-      arduino_stm32 = os.path.join(pio_root, 'packages', 'framework-arduinostm32')
+      arduino_stm32 = os.path.join(pio_root, 'packages',
+        'framework-arduinostm32')
       if os.path.isdir(arduino_stm32):
         for p in os.listdir(arduino_stm32):
           if p not in ['.', '..']:
@@ -102,6 +103,11 @@ class Source(Base, ClangDeopleteSourceBase):
       mbed_path = os.path.join(pio_root, 'packages', 'framework-mbed')
       if os.path.isdir(mbed_path):
         argument_manager.AddIncludePath(mbed_path)
+
+      # simba
+      simba_path = os.path.join(pio_root, 'packages', 'framework-simba', 'src')
+      if os.path.isdir(simba_path):
+        argument_manager.AddIncludePath(simba_path)
 
   def on_event(self, context):
     self.update(context)
