@@ -207,6 +207,43 @@ TEST_F(TestClangCompleter, TestCannotAddUnsavedFileWithoutContent) {
   EXPECT_EQ(engine_.file_count(), 0);
 }
 
+TEST_F(TestClangCompleter, TestCodeCompletePosition) {
+  std::string file = "./test/sample4.cc";
+  std::string content = engine_.GetFileContent(file);
+  int c = engine_.GetCodeCompleteColumn(content, 12, 8);
+  EXPECT_EQ(c, 8);
+
+  c = engine_.GetCodeCompleteColumn(content, 12, 10);
+  EXPECT_EQ(c, 8);
+
+  c = engine_.GetCodeCompleteColumn(content, 12, 12);
+  EXPECT_EQ(c, 8);
+
+  c = engine_.GetCodeCompleteColumn(content, 12, 20);
+  EXPECT_EQ(c, 20);
+
+  c = engine_.GetCodeCompleteColumn(content, 12, 22);
+  EXPECT_EQ(c, 20);
+
+  c = engine_.GetCodeCompleteColumn(content, 12, 24);
+  EXPECT_EQ(c, 20);
+
+  c = engine_.GetCodeCompleteColumn(content, 12, 27);
+  EXPECT_EQ(c, 27);
+
+  c = engine_.GetCodeCompleteColumn(content, 12, 29);
+  EXPECT_EQ(c, 27);
+
+  c = engine_.GetCodeCompleteColumn(content, 12, 31);
+  EXPECT_EQ(c, 27);
+
+  c = engine_.GetCodeCompleteColumn(content, 12, 37);
+  EXPECT_EQ(c, 37);
+
+  c = engine_.GetCodeCompleteColumn(content, 12, 39);
+  EXPECT_EQ(c, 37);
+}
+
 TEST_F(TestClangCompleter, TestObjcBasicLibrary) {
   std::string file = "./test/sample1.m";
   std::string content = engine_.GetFileContent(file);
