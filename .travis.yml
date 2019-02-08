@@ -2,12 +2,16 @@ language: python
 
 addons:
   apt:
+    sources:
+      - v-launchpad-jochen-sprickerhof-de/pcl
+
     packages:
       - build-essential
       - clang
       - swig3.0
       - libpython3-dev
       - libpython3.5-dev
+      - libpcl-dev
 
 os: linux
 
