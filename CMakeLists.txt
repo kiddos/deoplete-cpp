@@ -21,6 +21,9 @@ if (NOT EXISTS "${CMAKE_BINARY_DIR}/clang.tar.xz")
 
   execute_process(
     COMMAND tar xvf clang.tar.xz
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+
+  execute_process(
     COMMAND mv clang+llvm-7.0.1-x86_64-linux-gnu-ubuntu-16.04 clang
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 endif ()
