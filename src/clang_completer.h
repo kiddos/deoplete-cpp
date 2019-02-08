@@ -27,7 +27,9 @@ class ClangCompleter {
   std::string GetFileContent(const std::string& file);
   std::vector<Result> CodeComplete(const std::string& file,
                                    const std::string& content, int line,
-                                   int column, const ArgumentManager& arg_manager);
+                                   int column,
+                                   const ArgumentManager& arg_manager);
+  int GetCodeCompleteColumn(const std::string& content, int line, int column);
 
   int file_count() const { return files_.size(); }
 
@@ -37,6 +39,13 @@ class ClangCompleter {
   CXIndex index_;
   int parse_option_;
   int complete_option_;
+
+  struct {
+    int line;
+    int column;
+    std::string file;
+    std::vector<Result> result;
+  } last_completion_;
 
   std::vector<std::string> files_;
   std::vector<CXTranslationUnit> tus_;

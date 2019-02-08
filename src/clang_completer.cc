@@ -106,20 +106,61 @@ std::vector<ClangCompleter::Result> ClangCompleter::CodeComplete(
       content.length(),
   };
 
-  CXCodeCompleteResults* results = clang_codeCompleteAt(
-      tu, file.c_str(), line, column, &unsaved_files, 1, complete_option_);
+  int c = GetCodeCompleteColumn(content, line, column);
+  if (last_completion_.file == file &&
+      last_completion_.line == line &&
+      last_completion_.column == c &&
+      last_completion_.result.size() > 0) {
+    return last_completion_.result;
+  } else {
+    CXCodeCompleteResults* results = clang_codeCompleteAt(
+        tu, file.c_str(), line, c, &unsaved_files, 1, complete_option_);
 
-  std::vector<Result> outputs;
-  if (results) {
-    for (int i = 0; i < results->NumResults; ++i) {
-      CXCompletionString cs = results->Results[i].CompletionString;
-      Result result = GetResult(cs);
-      outputs.push_back(result);
+    std::vector<Result> outputs;
+    if (results) {
+      for (int i = 0; i < results->NumResults; ++i) {
+        CXCompletionString cs = results->Results[i].CompletionString;
+        Result result = GetResult(cs);
+        outputs.push_back(result);
+      }
+    }
+    clang_disposeCodeCompleteResults(results);
+
+    last_completion_.file = file;
+    last_completion_.line = line;
+    last_completion_.column = c;
+    last_completion_.result = outputs;
+    return outputs;
+  }
+}
+
+int ClangCompleter::GetCodeCompleteColumn(const std::string& content, int line,
+                                          int column) {
+  std::string iter_content = content;
+  std::vector<std::string> split;
+  while (iter_content.size() > 0) {
+    int next_line = iter_content.find('\n');
+    if (next_line >= 0) {
+      std::string l = iter_content.substr(0, next_line);
+      iter_content = iter_content.substr(next_line + 1);
+      split.push_back(l);
+    } else {
+      split.push_back(iter_content);
+      break;
     }
   }
-  clang_disposeCodeCompleteResults(results);
 
-  return outputs;
+  if (line <= split.size()) {
+    auto search = [](const std::string& s, const std::string& token) -> int {
+      return s.rfind(token) + token.size() + 1;
+    };
+    std::string current_line = split[line - 1].substr(0, column);
+    int d1 = search(current_line, "->");
+    int d2 = search(current_line, ".");
+    int d3 = search(current_line, "::");
+    return std::max(std::max(d1, d2), d3);
+  }
+  return column;
 }
 
 ClangCompleter::Result ClangCompleter::GetResult(CXCompletionString cs) {
