@@ -5,7 +5,8 @@ addons:
     packages:
       - build-essential
       - swig3.0
-      - libpython3-dev
+      - python3-dev
+      - python3-pip
 
 os: linux
 
