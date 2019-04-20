@@ -66,11 +66,12 @@ class Source(Base, ClangDeopleteSourceBase):
 
     if qt_dev:
       argument_manager.AddIncludePath(qt_root)
-      for submod in os.listdir(qt_root):
-        if submod not in ['.', '..']:
-          submod_path = os.path.join(qt_root, submod)
-          if os.path.isdir(submod_path):
-            argument_manager.AddIncludePath(submod_path)
+      if os.path.isfile(qt_root):
+        for submod in os.listdir(qt_root):
+          if submod not in ['.', '..']:
+            submod_path = os.path.join(qt_root, submod)
+            if os.path.isdir(submod_path):
+              argument_manager.AddIncludePath(submod_path)
 
   def maybe_add_ros_include_paths(self, v, argument_manager):
     ros_dev = v['deoplete#sources#cpp#enable_ros_dev']
