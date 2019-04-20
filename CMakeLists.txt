@@ -16,7 +16,7 @@ if (NOT CMAKE_BUILD_TYPE)
 endif ()
 
 if (NOT EXISTS "${CMAKE_BINARY_DIR}/clang.tar.xz")
-  file(DOWNLOAD https://releases.llvm.org/7.0.1/clang+llvm-7.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
+  file(DOWNLOAD http://releases.llvm.org/8.0.0/clang+llvm-8.0.0-x86_64-linux-gnu-ubuntu-18.04.tar.xz
     "${CMAKE_BINARY_DIR}/clang.tar.xz" SHOW_PROGRESS)
 
   execute_process(
@@ -24,7 +24,7 @@ if (NOT EXISTS "${CMAKE_BINARY_DIR}/clang.tar.xz")
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
   execute_process(
-    COMMAND mv clang+llvm-7.0.1-x86_64-linux-gnu-ubuntu-16.04 clang
+    COMMAND mv clang+llvm-8.0.0-x86_64-linux-gnu-ubuntu-18.04
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 endif ()
 
