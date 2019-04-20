@@ -15,7 +15,7 @@ target_compile_definitions(clang_completer
 
 ## SWIG3
 find_package(SWIG)
-find_package(PythonLibs 3.5)
+find_package(PythonLibs 3)
 
 message(STATUS "Using PythonLibs ${PYTHONLIBS_VERSION_STRING}")
 include(${SWIG_USE_FILE})
