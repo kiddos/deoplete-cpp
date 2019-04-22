@@ -36,7 +36,7 @@ include_directories("${CMAKE_SOURCE_DIR}/src")
 include_directories("${CMAKE_BINARY_DIR}/clang/include")
 link_directories("${CMAKE_BINARY_DIR}/clang/lib")
 
-include_directories(${GTEST_INCLUDE_DIRS})
+include_directories(${GTEST_INCLUDE_DIR})
 
 file(GLOB TEST_FILES sample* dependency*)
 file(COPY ${TEST_FILES} DESTINATION "${CMAKE_BINARY_DIR}/test")
