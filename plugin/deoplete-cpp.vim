@@ -70,11 +70,11 @@ let g:deoplete#sources#cpp#enable_ros_dev =
 
 let g:deoplete#sources#cpp#ros_root =
 \   get(g:, "deoplete#sources#cpp#ros_root",
-\   '/opt/ros/kinetic')
+\   '/opt/ros/melodic')
 
 let g:deoplete#sources#cpp#ros_user_ws =
 \   get(g:, "deoplete#sources#cpp#ros_user_ws",
-\   '~/catkin_kinetic')
+\   '~/catkin_melodic')
 
 let g:deoplete#sources#cpp#enable_cuda_dev =
 \   get(g:, "deoplete#sources#cpp#enable_cuda_dev", 1)
