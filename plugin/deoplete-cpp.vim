@@ -16,11 +16,11 @@ let g:deoplete#sources#c#include_paths =
 \   ])
 
 let g:deoplete#sources#c#enable_kernel_dev =
-\   get(g:, "deoplete#sources#c#enable_kernel_dev", 1)
+\   get(g:, "deoplete#sources#c#enable_kernel_dev", 0)
 
 let g:deoplete#sources#c#kernel_root =
 \   get(g:, "deoplete#sources#c#kernel_root",
-\   '/usr/src/linux-headers-4.4.0-116')
+\   '')
 
 let g:deoplete#sources#c#enable_platformio_dev =
 \   get(g:, "deoplete#sources#c#enable_platformio_dev", 1)
