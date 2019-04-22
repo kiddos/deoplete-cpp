@@ -15,16 +15,38 @@ if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Debug)
 endif ()
 
-if (NOT EXISTS "${CMAKE_BINARY_DIR}/clang.tar.xz")
-  file(DOWNLOAD http://releases.llvm.org/8.0.0/clang+llvm-8.0.0-x86_64-linux-gnu-ubuntu-18.04.tar.xz
-    "${CMAKE_BINARY_DIR}/clang.tar.xz" SHOW_PROGRESS)
+execute_process(
+  COMMAND lsb_release -r
+  COMMAND cut -d: -f2
+  COMMAND xargs
+  COMMAND tr -d '\n'
+  OUTPUT_VARIABLE UBUNTU_VERSION)
 
+message(STATUS "detected ubuntu version: ${UBUNTU_VERSION}")
+
+# download clang prebuilt
+if (NOT EXISTS "${CMAKE_BINARY_DIR}/clang.tar.xz")
+  if ("${UBUNTU_VERSION}" STREQUAL "18.04")
+    file(DOWNLOAD http://releases.llvm.org/8.0.0/clang+llvm-8.0.0-x86_64-linux-gnu-ubuntu-18.04.tar.xz
+      "${CMAKE_BINARY_DIR}/clang.tar.xz" SHOW_PROGRESS)
+  elseif ("${UBUNTU_VERSION}" STREQUAL "16.04")
+    file(DOWNLOAD http://releases.llvm.org/8.0.0/clang+llvm-8.0.0-x86_64-linux-gnu-ubuntu-16.04.tar.xz
+      "${CMAKE_BINARY_DIR}/clang.tar.xz" SHOW_PROGRESS)
+  elseif ("${UBUNTU_VERSION}" STREQUAL "14.04")
+    file(DOWNLOAD http://releases.llvm.org/8.0.0/clang+llvm-8.0.0-x86_64-linux-gnu-ubuntu-14.04.tar.xz
+      "${CMAKE_BINARY_DIR}/clang.tar.xz" SHOW_PROGRESS)
+  else ()
+    message(FATAL_ERROR "not supported")
+  endif ()
+endif ()
+
+if (NOT EXISTS "clang")
   execute_process(
     COMMAND tar xvf clang.tar.xz
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
   execute_process(
-    COMMAND mv clang+llvm-8.0.0-x86_64-linux-gnu-ubuntu-18.04 clang
+    COMMAND mv clang+llvm-8.0.0-x86_64-linux-gnu-ubuntu-${UBUNTU_VERSION} clang
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 endif ()
 
