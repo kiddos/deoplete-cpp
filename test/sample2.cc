@@ -1,9 +1,7 @@
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-#include <opencv2/core.hpp>
+#include <Eigen/Core>
 
 int main(void) {
 
-  pcl::
+  Eigen::
   return 0;
 }

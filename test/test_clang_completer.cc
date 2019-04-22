@@ -12,7 +12,6 @@ class TestClangCompleter : public ::testing::Test {
  public:
   TestClangCompleter() {
     cpp_arg_manager_.AddIncludePath("/usr/local/include");
-    cpp_arg_manager_.AddIncludePath("/usr/include/pcl-1.7");
     cpp_arg_manager_.AddIncludePath("/usr/include/eigen3");
 
     objc_arg_manager_.AddIncludePath("/usr/include/GNUstep");
@@ -121,8 +120,8 @@ TEST_F(TestClangCompleter, TestIncludeComplexLibrary) {
   std::string file = "./test/sample2.cc";
   std::string content = engine_.GetFileContent(file);
   std::vector<ClangCompleter::Result> results =
-      engine_.CodeComplete(file, content, 7, 8, cpp_arg_manager_);
-  EXPECT_TRUE(ContainResult(results, "PointCloud"));
+      engine_.CodeComplete(file, content, 5, 10, cpp_arg_manager_);
+  EXPECT_TRUE(ContainResult(results, "Matrix4f"));
 
   // test for time
   engine_.CodeComplete(file, content, 7, 8, cpp_arg_manager_);
