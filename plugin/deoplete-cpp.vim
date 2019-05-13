@@ -31,6 +31,9 @@ let g:deoplete#sources#c#platformio_root =
 
 
 " cpp
+let g:deoplete#sources#cpp#enable_bazel_includes =
+\   get(g:, "deoplete#sources#cpp#enable_bazel_includes", 1)
+
 let g:deoplete#sources#cpp#standard =
 \   get(g:, "deoplete#sources#cpp#standard", 14)
 
