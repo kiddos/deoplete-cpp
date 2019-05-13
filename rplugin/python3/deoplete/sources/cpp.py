@@ -2,6 +2,7 @@
 
 import os
 import sys
+import glob
 
 from .base import Base
 from deoplete.util import load_external_module
@@ -14,7 +15,7 @@ try:
   from clang_source_base import import_library
   from clang_source_base import ClangDeopleteSourceBase
   from clang_source_base import ClangCompletionWrapper
-except Exception as e:
+except Exception:
   pass
 
 
@@ -43,6 +44,9 @@ class Source(Base, ClangDeopleteSourceBase):
     v = vim.vars
     definitions = v['deoplete#sources#cpp#definitions']
     include_paths = v['deoplete#sources#cpp#include_paths']
+
+    if v['deoplete#sources#cpp#enable_bazel_includes']:
+      include_paths += glob.glob('bazel-*/**/include', recursive=True)
 
     try:
       standard = int(v['deoplete#sources#cpp#standard'])
