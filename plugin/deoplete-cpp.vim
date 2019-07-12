@@ -8,7 +8,7 @@ let g:deoplete#sources#c#standard =
 \   get(g:, "deoplete#sources#c#standard", 99)
 
 let g:deoplete#sources#c#definitions =
-\   get(g:, "deoplete#sources#c#definitions", ['-DDEBUG'])
+\   get(g:, "deoplete#sources#c#definitions", ['DEBUG'])
 
 let g:deoplete#sources#c#include_paths =
 \   get(g:, "deoplete#sources#c#include_paths", [
@@ -38,7 +38,7 @@ let g:deoplete#sources#cpp#standard =
 \   get(g:, "deoplete#sources#cpp#standard", 14)
 
 let g:deoplete#sources#cpp#definitions =
-\   get(g:, "deoplete#sources#cpp#definitions", ['-DDEBUG'])
+\   get(g:, "deoplete#sources#cpp#definitions", ['DEBUG'])
 
 let g:deoplete#sources#cpp#include_paths =
 \   get(g:, "deoplete#sources#cpp#include_paths", [
@@ -89,7 +89,7 @@ let g:deoplete#sources#cpp#cuda_root =
 
 " objc/objc++
 let g:deoplete#sources#objc#definitions =
-\   get(g:, "deoplete#sources#objc#definitions", ['-DDEBUG'])
+\   get(g:, "deoplete#sources#objc#definitions", ['DEBUG'])
 
 let g:deoplete#sources#objc#include_paths =
 \   get(g:, "deoplete#sources#objc#include_paths", [
@@ -103,7 +103,7 @@ let g:deoplete#sources#objc#include_paths =
 
 " arduino
 let g:deoplete#sources#arduino#definitions =
-\   get(g:, "deoplete#sources#arduino#definitions", ['-DDEBUG'])
+\   get(g:, "deoplete#sources#arduino#definitions", ['DEBUG'])
 
 let g:deoplete#sources#arduino#include_paths =
 \   get(g:, "deoplete#sources#arduino#include_paths", [
