@@ -65,11 +65,11 @@ class Source(Base, ClangDeopleteSourceBase):
           'packages', 'framework-arduinoavr', 'cores', 'arduino')
       if os.path.isdir(avr_path):
         argument_manager.AddIncludePath(avr_path)
-
-      esp_path = os.path.join(pio_root,
-          'packages', 'framework-arduinoespressif8266', 'cores', 'esp8266')
-      if os.path.isdir(esp_path):
-        argument_manager.AddIncludePath(esp_path)
+      else:
+        esp_path = os.path.join(pio_root,
+            'packages', 'framework-arduinoespressif8266', 'cores', 'esp8266')
+        if os.path.isdir(esp_path):
+          argument_manager.AddIncludePath(esp_path)
 
       stm32 = os.path.join(pio_root, 'packages', 'framework-arduinostm32')
       if os.path.isdir(stm32):
