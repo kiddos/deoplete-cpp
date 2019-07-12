@@ -14,16 +14,14 @@ try:
   from clang_source_base import import_library
   from clang_source_base import ClangDeopleteSourceBase
   from clang_source_base import ClangCompletionWrapper
-except Exception as e:
+except Exception:
   pass
 
 
 class Source(Base, ClangDeopleteSourceBase):
   def __init__(self, vim):
     Base.__init__(self, vim)
-    argument_manager = self.setup_arg_manager(vim)
-    completer = ClangCompletionWrapper(argument_manager)
-    ClangDeopleteSourceBase.__init__(self, vim, completer)
+    ClangDeopleteSourceBase.__init__(self, vim)
 
     # The description of a source.
     self.description = 'clang completion'
@@ -108,6 +106,11 @@ class Source(Base, ClangDeopleteSourceBase):
       simba_path = os.path.join(pio_root, 'packages', 'framework-simba', 'src')
       if os.path.isdir(simba_path):
         argument_manager.AddIncludePath(simba_path)
+
+  def on_init(self, context):
+    argument_manager = self.setup_arg_manager(self.vim)
+    completer = ClangCompletionWrapper(argument_manager)
+    self.set_completer(completer)
 
   def on_event(self, context):
     self.update(context)

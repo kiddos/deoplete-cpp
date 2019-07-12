@@ -12,7 +12,7 @@ def import_library():
   try:
     import clang_completer
     return clang_completer
-  except ImportError as e:
+  except ImportError:
     return False
 
 
@@ -73,8 +73,11 @@ class ClangCompletionWrapper(object):
 
 
 class ClangDeopleteSourceBase(object):
-  def __init__(self, vim, completer):
+  def __init__(self, vim):
     self.vim = vim
+    self._completer = None
+
+  def set_completer(self, completer):
     self._completer = completer
 
   def log(self, msg):
@@ -93,16 +96,19 @@ class ClangDeopleteSourceBase(object):
     """
     update both file content and source object
     """
-    filepath = self.get_buffer_name(context)
-    content = '\n'.join(self.vim.current.buffer)
-    self._completer.add_file(filepath, content)
+    if self._completer:
+      filepath = self.get_buffer_name(context)
+      content = '\n'.join(self.vim.current.buffer)
+      self._completer.add_file(filepath, content)
 
   def get_candidates(self, context):
     """
     retrive candidate from source object
     """
-    line = self.vim.eval('line(".")')
-    col = self.vim.eval('col(".")')
-    filepath = self.get_buffer_name(context)
-    content = '\n'.join(self.vim.current.buffer)
-    return self._completer.code_complete(filepath, content, line, col)
+    if self._completer:
+      line = self.vim.eval('line(".")')
+      col = self.vim.eval('col(".")')
+      filepath = self.get_buffer_name(context)
+      content = '\n'.join(self.vim.current.buffer)
+      return self._completer.code_complete(filepath, content, line, col)
+    return []
