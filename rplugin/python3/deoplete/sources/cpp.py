@@ -68,7 +68,7 @@ class Source(Base, ClangDeopleteSourceBase):
 
     if qt_dev:
       argument_manager.AddIncludePath(qt_root)
-      if os.path.isfile(qt_root):
+      if os.path.isdir(qt_root):
         for submod in os.listdir(qt_root):
           if submod not in ['.', '..']:
             submod_path = os.path.join(qt_root, submod)
