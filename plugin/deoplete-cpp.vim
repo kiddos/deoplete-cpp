@@ -43,22 +43,6 @@ let g:deoplete#sources#cpp#definitions =
 let g:deoplete#sources#cpp#include_paths =
 \   get(g:, "deoplete#sources#cpp#include_paths", [
 \   "/usr/local/include",
-\   ".",
-\   'src',
-\   "build",
-\   "include",
-\   "third_party",
-\   'lib',
-\   "..",
-\   "../src",
-\   "../include",
-\   "../build",
-\   '../lib',
-\   "../third_party",
-\   "../../src",
-\   "../../include",
-\   '../../lib',
-\   "../../third_party"
 \   ])
 
 let g:deoplete#sources#cpp#enable_qt_dev =
