@@ -1,5 +1,6 @@
 import os
 import ctypes
+import glob
 
 
 def import_library():
@@ -86,18 +87,31 @@ class ClangDeopleteSourceBase(object):
     """
     self.vim.command('echom "%s"' % (msg))
 
-  def get_buffer_name(self, context):
+  def get_buffer_name(self):
     """
     retrieve buffer name from current content
     """
     return self.vim.eval('expand("%:p")')
+
+  def search_for_includes(self):
+    current_dir = self.vim.command_output('pwd')
+    includes = glob.glob(current_dir + '/**/include')
+    includes += glob.glob(current_dir + '/../**/include')
+    includes += glob.glob(current_dir + '/../../**/include')
+    includes += glob.glob(current_dir + '/**/src')
+    includes += glob.glob(current_dir + '/../**/src')
+    includes += glob.glob(current_dir + '/../../**/src')
+    includes += glob.glob(current_dir + '/**/build')
+    includes += glob.glob(current_dir + '/../**/build')
+    includes += glob.glob(current_dir + '/../../**/build')
+    return includes
 
   def update(self, context):
     """
     update both file content and source object
     """
     if self._completer:
-      filepath = self.get_buffer_name(context)
+      filepath = self.get_buffer_name()
       content = '\n'.join(self.vim.current.buffer)
       self._completer.add_file(filepath, content)
 
@@ -108,7 +122,7 @@ class ClangDeopleteSourceBase(object):
     if self._completer:
       line = self.vim.eval('line(".")')
       col = self.vim.eval('col(".")')
-      filepath = self.get_buffer_name(context)
+      filepath = self.get_buffer_name()
       content = '\n'.join(self.vim.current.buffer)
       return self._completer.code_complete(filepath, content, line, col)
     return []
