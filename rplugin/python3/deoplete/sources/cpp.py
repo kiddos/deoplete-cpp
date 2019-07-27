@@ -42,6 +42,7 @@ class Source(Base, ClangDeopleteSourceBase):
     v = vim.vars
     definitions = v['deoplete#sources#cpp#definitions']
     include_paths = v['deoplete#sources#cpp#include_paths']
+    include_paths += self.search_for_includes()
 
     if v['deoplete#sources#cpp#enable_bazel_includes']:
       include_paths += glob.glob('bazel-*/**/include', recursive=True)

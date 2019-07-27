@@ -41,6 +41,7 @@ class Source(Base, ClangDeopleteSourceBase):
     v = vim.vars
     definitions = v['deoplete#sources#c#definitions']
     include_paths = v['deoplete#sources#c#include_paths']
+    include_paths += self.search_for_includes()
 
     try:
       standard = int(v['deoplete#sources#c#standard'])

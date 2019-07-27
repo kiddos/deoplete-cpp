@@ -41,6 +41,7 @@ class Source(Base, ClangDeopleteSourceBase):
     v = vim.vars
     definitions = v['deoplete#sources#objc#definitions']
     include_paths = v['deoplete#sources#objc#include_paths']
+    include_paths += self.search_for_includes()
 
     for ip in include_paths:
       argument_manager.AddIncludePath(ip)
