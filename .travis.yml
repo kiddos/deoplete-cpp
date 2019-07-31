@@ -19,6 +19,11 @@ env:
 
 os: linux
 
+dist:
+  - bionic
+  - xenial
+  - trusty
+
 python:
   - "3.5"
 
