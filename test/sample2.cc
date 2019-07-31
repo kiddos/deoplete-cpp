@@ -2,6 +2,6 @@
 
 int main(void) {
 
-  Eigen::
+  Eigen::Matrix4f m;
   return 0;
 }
