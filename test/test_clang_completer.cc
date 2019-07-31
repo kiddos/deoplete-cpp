@@ -122,6 +122,7 @@ TEST_F(TestClangCompleter, TestIncludeComplexLibrary) {
   std::vector<ClangCompleter::Result> results =
       engine_.CodeComplete(file, content, 5, 10, cpp_arg_manager_);
   EXPECT_TRUE(ContainResult(results, "Matrix4f"));
+  EXPECT_TRUE(ContainResult(results, "MatrixXf"));
 
   // test for time
   engine_.CodeComplete(file, content, 7, 8, cpp_arg_manager_);
@@ -158,7 +159,7 @@ TEST_F(TestClangCompleter, TestReparse) {
       engine_.CodeComplete(file, content, 4, 1, cpp_arg_manager_);
   EXPECT_TRUE(ContainResult(results, "std"));
 
-  engine_.Reparse(file, content);
+  engine_.Parse(file, content, cpp_arg_manager_);
   std::vector<ClangCompleter::Result> results2 =
       engine_.CodeComplete(file, content, 4, 1, cpp_arg_manager_);
   EXPECT_TRUE(ContainResult(results2, "std"));
@@ -176,16 +177,10 @@ TEST_F(TestClangCompleter, TestReparseUnsavdFile) {
       engine_.CodeComplete(file, content, 3, 8, cpp_arg_manager_);
   EXPECT_TRUE(ContainResult(results, "cout"));
 
-  engine_.Reparse(file, content);
+  engine_.Parse(file, content, cpp_arg_manager_);
   std::vector<ClangCompleter::Result> results2 =
       engine_.CodeComplete(file, content, 3, 8, cpp_arg_manager_);
   EXPECT_TRUE(ContainResult(results, "cout"));
-}
-
-TEST_F(TestClangCompleter, TestAddFileSuccess) {
-  std::string file = "./test/sample1.cc";
-  engine_.AddFile(file, cpp_arg_manager_);
-  EXPECT_EQ(engine_.file_count(), 1);
 }
 
 TEST_F(TestClangCompleter, TestAddUnsavedFileWithContent) {
@@ -196,51 +191,8 @@ TEST_F(TestClangCompleter, TestAddUnsavedFileWithContent) {
       "  std::\n"
       "}\n";
 
-  engine_.AddFile(file, content, cpp_arg_manager_);
+  engine_.Parse(file, content, cpp_arg_manager_);
   EXPECT_EQ(engine_.file_count(), 1);
-}
-
-TEST_F(TestClangCompleter, TestCannotAddUnsavedFileWithoutContent) {
-  std::string file = "./test/unsaved_file.cc";
-  engine_.AddFile(file, cpp_arg_manager_);
-  EXPECT_EQ(engine_.file_count(), 0);
-}
-
-TEST_F(TestClangCompleter, TestCodeCompletePosition) {
-  std::string file = "./test/sample4.cc";
-  std::string content = engine_.GetFileContent(file);
-  int c = engine_.GetCodeCompleteColumn(content, 12, 8);
-  EXPECT_EQ(c, 8);
-
-  c = engine_.GetCodeCompleteColumn(content, 12, 10);
-  EXPECT_EQ(c, 8);
-
-  c = engine_.GetCodeCompleteColumn(content, 12, 12);
-  EXPECT_EQ(c, 8);
-
-  c = engine_.GetCodeCompleteColumn(content, 12, 20);
-  EXPECT_EQ(c, 20);
-
-  c = engine_.GetCodeCompleteColumn(content, 12, 22);
-  EXPECT_EQ(c, 20);
-
-  c = engine_.GetCodeCompleteColumn(content, 12, 24);
-  EXPECT_EQ(c, 20);
-
-  c = engine_.GetCodeCompleteColumn(content, 12, 27);
-  EXPECT_EQ(c, 27);
-
-  c = engine_.GetCodeCompleteColumn(content, 12, 29);
-  EXPECT_EQ(c, 27);
-
-  c = engine_.GetCodeCompleteColumn(content, 12, 31);
-  EXPECT_EQ(c, 27);
-
-  c = engine_.GetCodeCompleteColumn(content, 12, 37);
-  EXPECT_EQ(c, 37);
-
-  c = engine_.GetCodeCompleteColumn(content, 12, 39);
-  EXPECT_EQ(c, 37);
 }
 
 TEST_F(TestClangCompleter, TestObjcBasicLibrary) {
@@ -248,6 +200,9 @@ TEST_F(TestClangCompleter, TestObjcBasicLibrary) {
   std::string content = engine_.GetFileContent(file);
   std::vector<ClangCompleter::Result> results =
       engine_.CodeComplete(file, content, 6, 1, objc_arg_manager_);
+
+  EXPECT_TRUE(ContainResult(results, "NSLog"));
+  EXPECT_TRUE(ContainResult(results, "NSAutoreleasePool"));
   EXPECT_TRUE(ContainResult(results, "@\""));
   EXPECT_TRUE(ContainResult(results, "@{"));
 }
@@ -257,6 +212,9 @@ TEST_F(TestClangCompleter, TestObjcppBasicLibrary) {
   std::string content = engine_.GetFileContent(file);
   std::vector<ClangCompleter::Result> results =
       engine_.CodeComplete(file, content, 6, 1, objcpp_arg_manager_);
+
+  EXPECT_TRUE(ContainResult(results, "NSLog"));
+  EXPECT_TRUE(ContainResult(results, "NSAutoreleasePool"));
   EXPECT_TRUE(ContainResult(results, "@\""));
   EXPECT_TRUE(ContainResult(results, "@{"));
 }
