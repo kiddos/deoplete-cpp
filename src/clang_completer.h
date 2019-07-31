@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -9,7 +10,7 @@
 #include <clang-c/Index.h>
 
 #include "argument_manager.h"
-#include "cpp_argument_manager.h"
+#include "token.h"
 
 class ClangCompleter {
  public:
@@ -19,17 +20,18 @@ class ClangCompleter {
   ClangCompleter();
   ~ClangCompleter();
 
-  void Reparse(const std::string& file, const std::string& content);
-  bool HasFile(const std::string& file);
-  void AddFile(const std::string& file, const ArgumentManager& arg_manager);
-  void AddFile(const std::string& file, const std::string& content,
-               const ArgumentManager& arg_manager);
+  void Parse(const std::string& file, const std::string& content,
+             const ArgumentManager& arg_manager);
+  void Update(const ArgumentManager& arg_manager);
+
   std::string GetFileContent(const std::string& file);
+  std::vector<Result> ObtainCodeCompleteResult(
+      const std::string& file, const std::string& content, int line, int column,
+      const ArgumentManager& arg_manager);
   std::vector<Result> CodeComplete(const std::string& file,
                                    const std::string& content, int line,
                                    int column,
                                    const ArgumentManager& arg_manager);
-  int GetCodeCompleteColumn(const std::string& content, int line, int column);
 
   int file_count() const { return files_.size(); }
 
@@ -40,13 +42,14 @@ class ClangCompleter {
   int parse_option_;
   int complete_option_;
 
-  struct {
+  typedef std::pair<std::string, CXTranslationUnit> FileContent;
+  std::map<std::string, FileContent> files_;
+
+  struct CompletionLocation {
+    std::string file;
     int line;
     int column;
-    std::string file;
-    std::vector<Result> result;
-  } last_completion_;
-
-  std::vector<std::string> files_;
-  std::vector<CXTranslationUnit> tus_;
+  };
+  typedef std::pair<CompletionLocation, std::vector<Result>> CacheData;
+  std::map<std::string, CacheData> cache_;
 };

@@ -16,55 +16,26 @@ ClangCompleter::ClangCompleter() : index_(clang_createIndex(1, 1)) {
 }
 
 ClangCompleter::~ClangCompleter() {
-  for (int i = 0; i < tus_.size(); ++i) {
-    clang_disposeTranslationUnit(tus_[i]);
+  for (auto it = files_.begin(); it != files_.end(); ++it) {
+    FileContent content = it->second;
+    clang_disposeTranslationUnit(content.second);
   }
   clang_disposeIndex(index_);
 }
 
-void ClangCompleter::Reparse(const std::string& file,
-                             const std::string& content) {
-  auto it = std::find(files_.begin(), files_.end(), file);
-  if (it == files_.end()) {
-    AddFile(file, content, CPPArgumentManager());
-  } else {
+void ClangCompleter::Parse(const std::string& file, const std::string& content,
+                           const ArgumentManager& arg_manager) {
+  if (files_.find(file) != files_.end()) {
+    // already added
     CXUnsavedFile unsaved_files{
         file.c_str(),
         content.c_str(),
         content.length(),
     };
-
-    int index = std::distance(files_.begin(), it);
-    clang_reparseTranslationUnit(tus_[index], 1, &unsaved_files, parse_option_);
-  }
-}
-
-bool ClangCompleter::HasFile(const std::string& file) {
-  return std::find(files_.begin(), files_.end(), file) != files_.end();
-}
-
-void ClangCompleter::AddFile(const std::string& file,
-                             const ArgumentManager& arg_manager) {
-  if (!HasFile(file)) {
-    std::vector<char*> args;
-    arg_manager.PrepareArgs(args);
-
-    std::ifstream input_file(file);
-    if (input_file.is_open()) {
-      CXTranslationUnit tu =
-          clang_parseTranslationUnit(index_, file.c_str(), &args[0],
-                                     args.size(), nullptr, 0, parse_option_);
-
-      tus_.push_back(tu);
-      files_.push_back(file);
-    }
-  }
-}
-
-void ClangCompleter::AddFile(const std::string& file,
-                             const std::string& content,
-                             const ArgumentManager& arg_manager) {
-  if (!HasFile(file)) {
+    clang_reparseTranslationUnit(files_[file].second, 1, &unsaved_files,
+                                 parse_option_);
+  } else {
+    // add translation unit
     CXUnsavedFile unsaved_files{
         file.c_str(),
         content.c_str(),
@@ -77,8 +48,18 @@ void ClangCompleter::AddFile(const std::string& file,
     CXTranslationUnit tu =
         clang_parseTranslationUnit(index_, file.c_str(), &args[0], args.size(),
                                    &unsaved_files, 1, parse_option_);
-    tus_.push_back(tu);
-    files_.push_back(file);
+    std::string c = content;
+    files_[file] = std::make_pair(c, tu);
+  }
+}
+
+void ClangCompleter::Update(const ArgumentManager& arg_manager) {
+  for (auto it = cache_.begin(); it != cache_.end(); ++it) {
+    CacheData data = it->second;
+    CompletionLocation loc = data.first;
+    std::vector<Result> new_results = ObtainCodeCompleteResult(
+        loc.file, files_[loc.file].first, loc.line, loc.column, arg_manager);
+    it->second = std::make_pair(loc, new_results);
   }
 }
 
@@ -89,78 +70,50 @@ std::string ClangCompleter::GetFileContent(const std::string& file) {
   return content;
 }
 
-std::vector<ClangCompleter::Result> ClangCompleter::CodeComplete(
+std::vector<ClangCompleter::Result> ClangCompleter::ObtainCodeCompleteResult(
     const std::string& file, const std::string& content, int line, int column,
     const ArgumentManager& arg_manager) {
-  if (!HasFile(file)) {
-    AddFile(file, content, arg_manager);
-  }
+  Parse(file, content, arg_manager);
 
-  auto it = std::find(files_.begin(), files_.end(), file);
-  int index = std::distance(files_.begin(), it);
-
-  CXTranslationUnit tu = tus_[index];
+  CXTranslationUnit tu = files_[file].second;
   CXUnsavedFile unsaved_files{
       file.c_str(),
       content.c_str(),
       content.length(),
   };
 
-  int c = GetCodeCompleteColumn(content, line, column);
-  if (last_completion_.file == file &&
-      last_completion_.line == line &&
-      last_completion_.column == c &&
-      last_completion_.result.size() > 0) {
-    return last_completion_.result;
-  } else {
-    CXCodeCompleteResults* results = clang_codeCompleteAt(
-        tu, file.c_str(), line, c, &unsaved_files, 1, complete_option_);
+  CXCodeCompleteResults* results = clang_codeCompleteAt(
+      tu, file.c_str(), line, column, &unsaved_files, 1, complete_option_);
 
-    std::vector<Result> outputs;
-    if (results) {
-      for (int i = 0; i < results->NumResults; ++i) {
-        CXCompletionString cs = results->Results[i].CompletionString;
-        Result result = GetResult(cs);
-        outputs.push_back(result);
-      }
+  std::vector<Result> outputs;
+  if (results) {
+    for (int i = 0; i < results->NumResults; ++i) {
+      CXCompletionString cs = results->Results[i].CompletionString;
+      Result result = GetResult(cs);
+      outputs.push_back(result);
     }
-    clang_disposeCodeCompleteResults(results);
-
-    last_completion_.file = file;
-    last_completion_.line = line;
-    last_completion_.column = c;
-    last_completion_.result = outputs;
-    return outputs;
   }
+  clang_disposeCodeCompleteResults(results);
+  return outputs;
 }
 
-int ClangCompleter::GetCodeCompleteColumn(const std::string& content, int line,
-                                          int column) {
-  std::string iter_content = content;
-  std::vector<std::string> split;
-  while (iter_content.size() > 0) {
-    int next_line = iter_content.find('\n');
-    if (next_line >= 0) {
-      std::string l = iter_content.substr(0, next_line);
-      iter_content = iter_content.substr(next_line + 1);
-      split.push_back(l);
-    } else {
-      split.push_back(iter_content);
-      break;
-    }
+std::vector<ClangCompleter::Result> ClangCompleter::CodeComplete(
+    const std::string& file, const std::string& content, int line, int column,
+    const ArgumentManager& arg_manager) {
+  int l = line;
+  int c = column;
+  std::string token = FindToken(content, l, c);
+  if (cache_.find(token) != cache_.end()) {
+    CacheData data = cache_[token];
+    return data.second;
+  } else {
+    std::vector<Result> outputs =
+        ObtainCodeCompleteResult(file, content, l, c, arg_manager);
+    CompletionLocation loc = {file, l, c};
+    CacheData data = std::make_pair(loc, outputs);
+    cache_[token] = data;
+    return outputs;
   }
-
-  if (line <= split.size()) {
-    auto search = [](const std::string& s, const std::string& token) -> int {
-      return s.rfind(token) + token.size() + 1;
-    };
-    std::string current_line = split[line - 1].substr(0, column);
-    int d1 = search(current_line, "->");
-    int d2 = search(current_line, ".");
-    int d3 = search(current_line, "::");
-    return std::max(std::max(d1, d2), d3);
-  }
-  return column;
 }
 
 ClangCompleter::Result ClangCompleter::GetResult(CXCompletionString cs) {
