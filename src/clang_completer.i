@@ -21,11 +21,9 @@ class ClangCompleter {
   ClangCompleter();
   ~ClangCompleter();
 
-  void Reparse(const std::string& file, const std::string& content);
-  bool HasFile(const std::string& file);
-  void AddFile(const std::string& file, const ArgumentManager& arg_manager);
-  void AddFile(const std::string& file, const std::string& content,
-               const ArgumentManager& arg_manager);
+  void Parse(const std::string& file, const std::string& content,
+             const ArgumentManager& arg_manager);
+  void Update(const ArgumentManager& arg_manager);
   std::string GetFileContent(const std::string& file);
   std::vector<Result> CodeComplete(const std::string& file,
                                    const std::string& content, int line,
