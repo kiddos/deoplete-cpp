@@ -105,6 +105,8 @@ std::vector<ClangCompleter::Result> ClangCompleter::CodeComplete(
   std::string token = FindToken(content, l, c);
   if (cache_.find(token) != cache_.end()) {
     CacheData data = cache_[token];
+    cache_[token].first.line = l;
+    cache_[token].first.column = c;
     return data.second;
   } else {
     std::vector<Result> outputs =
