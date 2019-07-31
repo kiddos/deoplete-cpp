@@ -11,8 +11,7 @@ ClangCompleter::ClangCompleter() : index_(clang_createIndex(1, 1)) {
                   CXTranslationUnit_CreatePreambleOnFirstParse |
                   CXTranslationUnit_KeepGoing;
 
-  complete_option_ = CXCodeComplete_IncludeMacros |
-                     CXCodeComplete_IncludeCompletionsWithFixIts;
+  complete_option_ = CXCodeComplete_IncludeMacros;
 }
 
 ClangCompleter::~ClangCompleter() {
