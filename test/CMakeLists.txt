@@ -45,3 +45,9 @@ add_executable(test_clang_completer test_clang_completer.cc)
 add_dependencies(test_clang_completer ${GTEST_LIBRARY})
 target_link_libraries(test_clang_completer
   clang_completer ${GTEST_LIBRARY} pthread)
+
+
+add_executable(test_token test_token.cc)
+add_dependencies(test_token ${GTEST_LIBRARY})
+target_link_libraries(test_token
+  clang_completer ${GTEST_LIBRARY} pthread)
