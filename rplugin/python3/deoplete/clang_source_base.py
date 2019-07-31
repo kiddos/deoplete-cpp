@@ -1,6 +1,7 @@
 import os
 import ctypes
 import glob
+import threading
 
 
 def import_library():
@@ -24,20 +25,25 @@ class ClangCompletionWrapper(object):
   def __init__(self, arg_manager):
     self._completer = clang_completer.ClangCompleter()
     self._arg_manager = arg_manager
+    self._runner = None
+    self._updating = False
 
-  def add_file(self, filepath, content):
-    """
-    store file as translation unit in completer
-    """
-    self._completer.AddFile(filepath, content, self._arg_manager)
-
-  def reparse_file(self, filepath, content):
+  def update_async(self, filepath, content):
     """
     reparse the translation unit in completer
     if the translation unit is not in the completer
     the completer will add the translation unit
     """
-    self._completer.Reparse(filepath, content)
+    self._completer.Parse(filepath, content, self._arg_manager)
+
+    def update_func():
+      self._completer.Update(self._arg_manager)
+      self._updating = False
+
+    if not self._updating:
+      self._updating = True
+      self._runner = threading.Thread(target=update_func)
+      self._runner.start()
 
   def process_clang_result(self, result):
     processed = {
@@ -113,7 +119,7 @@ class ClangDeopleteSourceBase(object):
     if self._completer:
       filepath = self.get_buffer_name()
       content = '\n'.join(self.vim.current.buffer)
-      self._completer.add_file(filepath, content)
+      self._completer.update_async(filepath, content)
 
   def get_candidates(self, context):
     """
