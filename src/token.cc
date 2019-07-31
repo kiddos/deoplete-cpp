@@ -64,7 +64,8 @@ int FindLastOccurrence(const std::string& content,
   return best;
 }
 
-void ComputeLocation(const std::string& content, int found, int& line, int& column) {
+void ComputeLocation(const std::string& content, int found, int& line,
+                     int& column) {
   std::string it = content;
   int index = 0;
   line = 1;
