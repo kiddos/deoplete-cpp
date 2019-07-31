@@ -2,14 +2,20 @@ language: python
 
 addons:
   apt:
+    sources:
+      - ubuntu-toolchain-r-test
     packages:
       - build-essential
+      - g++-4.9
       - swig3.0
       - python3-dev
       - python3-pip
       - libeigen3-dev
       - gobjc
       - gnustep-devel
+
+env:
+  - MATRIX_EVAL="CC=gcc-4.9 && CXX=g++-4.9"
 
 os: linux
 
@@ -20,6 +26,7 @@ before_install:
   # Install a supported cmake version (>= 3.4.3)
   - wget -O cmake.sh https://cmake.org/files/v3.10/cmake-3.10.0-rc1-Linux-x86_64.sh
   - sudo sh cmake.sh --skip-license --exclude-subdir --prefix=/usr/local
+  - eval "${MATRIX_EVAL}"
 
 install:
   - mkdir build
