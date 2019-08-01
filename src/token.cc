@@ -1,7 +1,9 @@
 #include "token.h"
 
 bool GetToken(const std::string& content, std::string& token) {
-  std::regex pattern("([^=+\\-*/\\^\\&;{}<>:\\.\"']+(::|->|\\.)$)");
+  // this is too expensive to compute
+  // std::regex pattern("(([^=+\\*/\\^\\&;{}<>\"']+|->)+(::|\\.|->)$)");
+  std::regex pattern("(([^=+\\*/\\^\\&;{}<>\"']+)(::|\\.|->)$)");
   std::smatch match;
   bool result = std::regex_search(content, match, pattern);
   if (match.size() > 0) {
