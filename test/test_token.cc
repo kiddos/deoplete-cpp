@@ -21,7 +21,7 @@ TEST(TestToken, GetToken) {
   EXPECT_TRUE(GetToken("std::", token));
   EXPECT_EQ(token, "std::");
   EXPECT_TRUE(GetToken("boost::program_options::", token));
-  EXPECT_EQ(token, "program_options::");
+  EXPECT_EQ(token, "boost::program_options::");
   EXPECT_TRUE(GetToken("Object::", token));
   EXPECT_EQ(token, "Object::");
 
@@ -30,11 +30,15 @@ TEST(TestToken, GetToken) {
   EXPECT_TRUE(GetToken("instance->", token));
   EXPECT_EQ(token, "instance->");
   EXPECT_TRUE(GetToken("instance.method().", token));
-  EXPECT_EQ(token, "method().");
+  EXPECT_EQ(token, "instance.method().");
   EXPECT_TRUE(GetToken("instance.method()->", token));
-  EXPECT_EQ(token, "method()->");
+  EXPECT_EQ(token, "instance.method()->");
   EXPECT_TRUE(GetToken("instance.\nmethod().", token));
-  EXPECT_EQ(token, "\nmethod().");
+  EXPECT_EQ(token, "instance.\nmethod().");
+
+  // this is too expensive to compute
+  // EXPECT_TRUE(GetToken("instance->\nmethod().", token));
+  // EXPECT_EQ(token, "instance->\nmethod().");
 
   EXPECT_FALSE(GetToken("statement;", token));
   EXPECT_FALSE(GetToken("// comments", token));
@@ -185,14 +189,14 @@ TEST(TestToken, FindToken5) {
   line = 21;
   column = 16;
   std::string token3 = FindToken(content, line, column);
-  EXPECT_EQ(token3, "B::");
+  EXPECT_EQ(token3, "A::B::");
   EXPECT_EQ(line, 21);
   EXPECT_EQ(column, 9);
 
   line = 21;
   column = 9;
   std::string token4 = FindToken(content, line, column);
-  EXPECT_EQ(token4, "B::");
+  EXPECT_EQ(token4, "A::B::");
   EXPECT_EQ(line, 21);
   EXPECT_EQ(column, 9);
 
@@ -220,7 +224,7 @@ TEST(TestToken, FindToken5) {
   line = 23;
   column = 11;
   std::string token8 = FindToken(content, line, column);
-  EXPECT_EQ(token8, "bar().");
+  EXPECT_EQ(token8, "c.bar().");
   EXPECT_EQ(line, 23);
   EXPECT_EQ(column, 11);
 }
