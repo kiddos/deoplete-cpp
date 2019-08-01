@@ -37,6 +37,7 @@ class ClangCompleter {
 
  private:
   Result GetResult(CXCompletionString cs);
+  bool ShouldCache(const std::string& token);
 
   CXIndex index_;
   int parse_option_;
@@ -47,6 +48,7 @@ class ClangCompleter {
 
   struct CompletionLocation {
     std::string file;
+    std::string snap_shot;
     int line;
     int column;
   };

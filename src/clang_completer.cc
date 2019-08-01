@@ -57,9 +57,14 @@ void ClangCompleter::Update(const ArgumentManager& arg_manager) {
   for (auto it = cache_.begin(); it != cache_.end(); ++it) {
     CacheData data = it->second;
     CompletionLocation loc = data.first;
-    std::vector<Result> new_results = ObtainCodeCompleteResult(
-        loc.file, files_[loc.file].first, loc.line, loc.column, arg_manager);
-    it->second = std::make_pair(loc, new_results);
+    if (loc.snap_shot.length() > 0) {
+      std::vector<Result> new_results = ObtainCodeCompleteResult(
+          loc.file, loc.snap_shot, loc.line, loc.column, arg_manager);
+      if (new_results.size() > data.second.size()) {
+        loc.snap_shot = "";
+        it->second = std::make_pair(loc, new_results);
+      }
+    }
   }
 }
 
@@ -84,6 +89,7 @@ std::vector<ClangCompleter::Result> ClangCompleter::ObtainCodeCompleteResult(
 
   CXCodeCompleteResults* results = clang_codeCompleteAt(
       tu, file.c_str(), line, column, &unsaved_files, 1, complete_option_);
+  clang_sortCodeCompletionResults(results->Results, results->NumResults);
 
   std::vector<Result> outputs;
   if (results) {
@@ -105,15 +111,18 @@ std::vector<ClangCompleter::Result> ClangCompleter::CodeComplete(
   std::string token = FindToken(content, l, c);
   if (cache_.find(token) != cache_.end()) {
     CacheData data = cache_[token];
+    cache_[token].first.snap_shot = content;
     cache_[token].first.line = l;
     cache_[token].first.column = c;
     return data.second;
   } else {
     std::vector<Result> outputs =
         ObtainCodeCompleteResult(file, content, l, c, arg_manager);
-    CompletionLocation loc = {file, l, c};
-    CacheData data = std::make_pair(loc, outputs);
-    cache_[token] = data;
+    CompletionLocation loc = {file, content, l, c};
+    if (ShouldCache(token)) {
+      CacheData data = std::make_pair(loc, outputs);
+      cache_[token] = data;
+    }
     return outputs;
   }
 }
@@ -198,4 +207,8 @@ ClangCompleter::Result ClangCompleter::GetResult(CXCompletionString cs) {
     result.push_back(std::make_pair(kind, complete_content));
   }
   return result;
+}
+
+bool ClangCompleter::ShouldCache(const std::string& token) {
+  return token.length() > 2 && token.substr(token.length() - 2) == "::";
 }
