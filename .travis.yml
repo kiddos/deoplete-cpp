@@ -19,10 +19,10 @@ env:
 
 os: linux
 
-dist:
-  - bionic
-  - xenial
-  - trusty
+matrix:
+  - dist: bionic
+  - dist: xenial
+  - dist: trusty
 
 python:
   - "3.5"
@@ -42,5 +42,5 @@ install:
   - cd ..
 
 script:
-  - cd build
-  - ./bin/test_clang_completer
+  - ./build/bin/test_clang_completer
+  - ./build/bin/test_token
