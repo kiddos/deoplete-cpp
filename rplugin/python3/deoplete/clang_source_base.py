@@ -116,6 +116,12 @@ class ClangDeopleteSourceBase(object):
     includes += glob.glob(current_dir + '/**/build')
     includes += glob.glob(current_dir + '/../**/build')
     includes += glob.glob(current_dir + '/../../**/build')
+    includes += glob.glob(current_dir + '/**/build/src')
+    includes += glob.glob(current_dir + '/../**/build/src')
+    includes += glob.glob(current_dir + '/../../**/build/src')
+    includes += glob.glob(current_dir + '/**/build/include')
+    includes += glob.glob(current_dir + '/../**/build/include')
+    includes += glob.glob(current_dir + '/../../**/build/include')
     return includes
 
   def update(self, context):
