@@ -107,21 +107,9 @@ class ClangDeopleteSourceBase(object):
 
   def search_for_includes(self):
     current_dir = self.vim.command_output('pwd')
-    includes = glob.glob(current_dir + '/**/include')
-    includes += glob.glob(current_dir + '/../**/include')
-    includes += glob.glob(current_dir + '/../../**/include')
-    includes += glob.glob(current_dir + '/**/src')
-    includes += glob.glob(current_dir + '/../**/src')
-    includes += glob.glob(current_dir + '/../../**/src')
-    includes += glob.glob(current_dir + '/**/build')
-    includes += glob.glob(current_dir + '/../**/build')
-    includes += glob.glob(current_dir + '/../../**/build')
-    includes += glob.glob(current_dir + '/**/build/src')
-    includes += glob.glob(current_dir + '/../**/build/src')
-    includes += glob.glob(current_dir + '/../../**/build/src')
-    includes += glob.glob(current_dir + '/**/build/include')
-    includes += glob.glob(current_dir + '/../**/build/include')
-    includes += glob.glob(current_dir + '/../../**/build/include')
+    includes = glob.glob(current_dir + '/**/include/', recursive=True)
+    includes += glob.glob(current_dir + '/**/src/', recursive=True)
+    includes += glob.glob(current_dir + '/**/build/', recursive=True)
     return includes
 
   def update(self, context):
