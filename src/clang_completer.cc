@@ -89,17 +89,19 @@ std::vector<ClangCompleter::Result> ClangCompleter::ObtainCodeCompleteResult(
 
   CXCodeCompleteResults* results = clang_codeCompleteAt(
       tu, file.c_str(), line, column, &unsaved_files, 1, complete_option_);
-  clang_sortCodeCompletionResults(results->Results, results->NumResults);
 
   std::vector<Result> outputs;
   if (results) {
+    clang_sortCodeCompletionResults(results->Results, results->NumResults);
+
     for (int i = 0; i < results->NumResults; ++i) {
       CXCompletionString cs = results->Results[i].CompletionString;
       Result result = GetResult(cs);
       outputs.push_back(result);
     }
+    clang_disposeCodeCompleteResults(results);
   }
-  clang_disposeCodeCompleteResults(results);
+
   return outputs;
 }
 
