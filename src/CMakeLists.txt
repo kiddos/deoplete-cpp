@@ -12,7 +12,7 @@ file(GLOB SOURCE_FILES
 add_library(clang_completer ${SOURCE_FILES})
 target_link_libraries(clang_completer clang)
 target_compile_definitions(clang_completer
-  PUBLIC "-DCLANG_INCLUDE_DIR=\"${CMAKE_BINARY_DIR}/clang/lib/clang/8.0.0/include\"")
+  PUBLIC "-DCLANG_INCLUDE_DIR=\"${CMAKE_BINARY_DIR}/clang/lib/clang/9.0.0/include\"")
 
 ## SWIG3
 find_package(SWIG)
@@ -29,7 +29,7 @@ swig_add_library(clang_completer LANGUAGE python SOURCES clang_completer.i ${SOU
 swig_link_libraries(clang_completer ${PYTHON_LIBRARY} clang)
 
 target_compile_definitions(_clang_completer
-  PUBLIC "-DCLANG_INCLUDE_DIR=\"${CMAKE_BINARY_DIR}/clang/lib/clang/8.0.0/include\"")
+  PUBLIC "-DCLANG_INCLUDE_DIR=\"${CMAKE_BINARY_DIR}/clang/lib/clang/9.0.0/include\"")
 
 install(TARGETS _clang_completer
   DESTINATION "${CMAKE_BINARY_DIR}/../rplugin/python3/deoplete/")
