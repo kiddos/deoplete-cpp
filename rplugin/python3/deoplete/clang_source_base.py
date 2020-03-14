@@ -102,8 +102,8 @@ class ClangDeopleteSourceBase(object):
     return self.vim.eval('expand("%:p")')
 
   def get_buffer_content(self):
-    #  return self.vim.eval('join(getline(1, "$"), "\n")')
-    return '\n'.join(self.vim.current.buffer)
+    return self.vim.eval('join(getline(1, "$"), "\n")')
+    #  return '\n'.join(self.vim.current.buffer)
 
   def search_for_includes(self):
     current_dir = self.vim.command_output('pwd')
