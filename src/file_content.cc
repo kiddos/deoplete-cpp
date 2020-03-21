@@ -5,7 +5,7 @@ FileContent::FileContent() {}
 std::vector<CXUnsavedFile> FileContent::GetUnsavedFiles() const {
   std::vector<CXUnsavedFile> unsaved_files;
 
-  for (auto it = content_.begin(); it != content_.end(); ++it) {
+  for (auto it = begin(); it != end(); ++it) {
     unsaved_files.push_back(CXUnsavedFile{
         it->first.c_str(),
         it->second.c_str(),
@@ -20,7 +20,7 @@ std::vector<CXUnsavedFile> FileContent::GetUnsavedFiles(
   insert(file, content);
 
   std::vector<CXUnsavedFile> unsaved_files;
-  for (auto it = content_.begin(); it != content_.end(); ++it) {
+  for (auto it = begin(); it != end(); ++it) {
     unsaved_files.push_back(CXUnsavedFile{
         it->first.c_str(),
         it->second.c_str(),
