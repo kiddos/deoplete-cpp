@@ -66,5 +66,9 @@ set(GTEST_LIBS ${CMAKE_CURRENT_BINARY_DIR}/googletest-build/lib/libgtest.a
   ${CMAKE_CURRENT_BINARY_DIR}/googletest-build/lib/libgtest_main.a
   pthread)
 
+# copy test files
+file(COPY ${CMAKE_SOURCE_DIR}/test DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 enable_testing()
+
+# source build
 add_subdirectory(src)
