@@ -6,6 +6,7 @@
 
 %{
 #include "clang_completer.h"
+#include "completion_result.h"
 #include "argument_manager.h"
 #include "c_argument_manager.h"
 #include "cpp_argument_manager.h"
@@ -13,27 +14,28 @@
 #include "objcpp_argument_manager.h"
 %}
 
+typedef std::pair<std::string, std::string> CompletionResultData;
+typedef std::vector<CompletionResultData> CompletionResult;
+typedef std::vector<CompletionResult> CompletionResults;
+
 class ClangCompleter {
  public:
-  typedef std::pair<std::string, std::string> ResultKind;
-  typedef std::vector<ResultKind> Result;
-
   ClangCompleter();
   ~ClangCompleter();
 
   void Parse(const std::string& file, const std::string& content,
              const ArgumentManager& arg_manager);
   void Update();
-  std::vector<Result> CodeComplete(const std::string& file,
+  CompletionResults CodeComplete(const std::string& file,
                                    const std::string& content, int line,
                                    int column, const ArgumentManager& arg_manager);
 
   int file_count() const;
 };
 
-%template(ResultKind) std::pair<std::string, std::string>;
-%template(Result) std::vector<std::pair<std::string, std::string>>;
-%template(Results) std::vector<std::vector<std::pair<std::string, std::string>>>;
+%template(CompletionResultData) std::pair<std::string, std::string>;
+%template(CompletionResult) std::vector<std::pair<std::string, std::string>>;
+%template(CompletionResults) std::vector<std::vector<std::pair<std::string, std::string>>>;
 
 class ArgumentManager {
  public:
