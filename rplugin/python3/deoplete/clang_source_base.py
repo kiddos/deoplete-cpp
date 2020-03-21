@@ -26,26 +26,16 @@ class ClangCompletionWrapper(object):
     self._completer = clang_completer.ClangCompleter()
     self._arg_manager = arg_manager
     self._runner = None
-    self._updating = False
 
   def update_sync(self, filepath, content):
-    self._updating = True
-    self._completer.Parse(filepath, content, self._arg_manager)
-    #  self._completer.Update(self._arg_manager)
-    self._updating = False
-
-  def update_async(self, filepath, content):
     """
     reparse the translation unit in completer
     if the translation unit is not in the completer
     the completer will add the translation unit
     """
-    if not self._updating:
-      self._updating = True
-      self._runner = threading.Thread(target=self.update_sync,
-                                      args=(filepath,content,))
-      self._runner.daemon = True
-      self._runner.start()
+
+    self._completer.Parse(filepath, content, self._arg_manager)
+    self._completer.Update()
 
   def process_clang_result(self, result):
     processed = {
@@ -119,7 +109,6 @@ class ClangDeopleteSourceBase(object):
     if self._completer:
       filepath = self.get_buffer_name()
       content = self.get_buffer_content()
-      #  self._completer.update_async(filepath, content)
       self._completer.update_sync(filepath, content)
 
   def get_candidates(self, context):
