@@ -38,3 +38,6 @@ install(FILES "${CMAKE_BINARY_DIR}/src/clang_completer.py"
 # test build
 add_executable(test_clang_completer clang_completer_test.cc)
 target_link_libraries(test_clang_completer clang_completer ${GTEST_LIBS})
+
+add_executable(test_token token_test.cc)
+target_link_libraries(test_token clang_completer ${GTEST_LIBS})
