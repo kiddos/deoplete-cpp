@@ -49,7 +49,7 @@ class ClangCompletionWrapper(object):
     for pair in result:
       if pair[0] == 'TypedText':
         processed['word'] = processed['abbr'] = pair[1]
-      if pair[0] == 'ResultType':
+      elif pair[0] == 'ResultType':
         processed['menu'] = pair[1]
       else:
         completed += pair[1]
