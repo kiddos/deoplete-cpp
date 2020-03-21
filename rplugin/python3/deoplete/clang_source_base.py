@@ -31,7 +31,7 @@ class ClangCompletionWrapper(object):
   def update_sync(self, filepath, content):
     self._updating = True
     self._completer.Parse(filepath, content, self._arg_manager)
-    self._completer.Update(self._arg_manager)
+    #  self._completer.Update(self._arg_manager)
     self._updating = False
 
   def update_async(self, filepath, content):
@@ -119,7 +119,8 @@ class ClangDeopleteSourceBase(object):
     if self._completer:
       filepath = self.get_buffer_name()
       content = self.get_buffer_content()
-      self._completer.update_async(filepath, content)
+      #  self._completer.update_async(filepath, content)
+      self._completer.update_sync(filepath, content)
 
   def get_candidates(self, context):
     """
