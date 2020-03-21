@@ -8,6 +8,13 @@
 #include "objc_argument_manager.h"
 #include "objcpp_argument_manager.h"
 
+std::string GetFileContent(const std::string& file) {
+  std::ifstream input_stream(file);
+  std::string content((std::istreambuf_iterator<char>(input_stream)),
+                      std::istreambuf_iterator<char>());
+  return content;
+}
+
 class TestClangCompleter : public ::testing::Test {
  public:
   TestClangCompleter() {
@@ -29,10 +36,10 @@ class TestClangCompleter : public ::testing::Test {
         << std::endl;
   }
 
-  bool ContainResult(const std::vector<ClangCompleter::Result>& results,
+  bool ContainResult(const CompletionResults& results,
                      const std::string& text) {
     for (int i = 0; i < results.size(); ++i) {
-      ClangCompleter::Result result = results[i];
+      CompletionResult result = results[i];
       for (int j = 0; j < result.size(); ++j) {
         if (result[j].first == "TypedText" && result[j].second == text) {
           return true;
@@ -51,7 +58,7 @@ class TestClangCompleter : public ::testing::Test {
   OBJCArgumentManager objc_arg_manager_;
   OBJCPPArgumentManager objcpp_arg_manager_;
 
-  void EchoResults(const std::vector<ClangCompleter::Result>& results) {
+  void EchoResults(const CompletionResults& results) {
     for (int i = 0; i < results.size(); ++i) {
       for (int j = 0; j < results[i].size(); ++j) {
         std::cout << results[i][j].first << ": " << results[i][j].second
@@ -64,8 +71,8 @@ class TestClangCompleter : public ::testing::Test {
 
 TEST_F(TestClangCompleter, TestCStdIOLibrary) {
   std::string file = "./test/sample1.c";
-  std::string content = engine_.GetFileContent(file);
-  std::vector<ClangCompleter::Result> results =
+  std::string content = GetFileContent(file);
+  CompletionResults results =
       engine_.CodeComplete(file, content, 5, 1, c_arg_manager_);
 
   // test common function exists
@@ -95,14 +102,14 @@ TEST_F(TestClangCompleter, TestCStdIOLibrary) {
 
 TEST_F(TestClangCompleter, TestCCustomDataStructure) {
   std::string file = "./test/sample2.c";
-  std::string content = engine_.GetFileContent(file);
-  std::vector<ClangCompleter::Result> results =
+  std::string content = GetFileContent(file);
+  CompletionResults results =
       engine_.CodeComplete(file, content, 24, 5, c_arg_manager_);
 
   EXPECT_TRUE(ContainResult(results, "i"));
   EXPECT_TRUE(ContainResult(results, "d"));
 
-  std::vector<ClangCompleter::Result> results2 =
+  CompletionResults results2 =
       engine_.CodeComplete(file, content, 25, 8, c_arg_manager_);
   EXPECT_TRUE(ContainResult(results, "i"));
   EXPECT_TRUE(ContainResult(results, "d"));
@@ -110,16 +117,16 @@ TEST_F(TestClangCompleter, TestCCustomDataStructure) {
 
 TEST_F(TestClangCompleter, TestDefaultNamespace) {
   std::string file = "./test/sample1.cc";
-  std::string content = engine_.GetFileContent(file);
-  std::vector<ClangCompleter::Result> results =
+  std::string content = GetFileContent(file);
+  CompletionResults results =
       engine_.CodeComplete(file, content, 4, 1, cpp_arg_manager_);
   EXPECT_TRUE(ContainResult(results, "std"));
 }
 
 TEST_F(TestClangCompleter, TestIncludeComplexLibrary) {
   std::string file = "./test/sample2.cc";
-  std::string content = engine_.GetFileContent(file);
-  std::vector<ClangCompleter::Result> results =
+  std::string content = GetFileContent(file);
+  CompletionResults results =
       engine_.CodeComplete(file, content, 5, 10, cpp_arg_manager_);
   EXPECT_TRUE(ContainResult(results, "Matrix4f"));
   EXPECT_TRUE(ContainResult(results, "MatrixXf"));
@@ -130,8 +137,8 @@ TEST_F(TestClangCompleter, TestIncludeComplexLibrary) {
 
 TEST_F(TestClangCompleter, TestIncludeLibrary) {
   std::string file = "./test/sample3.cc";
-  std::string content = engine_.GetFileContent(file);
-  std::vector<ClangCompleter::Result> results =
+  std::string content = GetFileContent(file);
+  CompletionResults results =
       engine_.CodeComplete(file, content, 3, 11, cpp_arg_manager_);
 
   EXPECT_TRUE(ContainResult(results, "Abstract"));
@@ -147,20 +154,20 @@ TEST_F(TestClangCompleter, TestCompleteUnsavedFile) {
       "  std::\n"
       "}\n";
 
-  std::vector<ClangCompleter::Result> results =
+  CompletionResults results =
       engine_.CodeComplete(file, content, 3, 8, cpp_arg_manager_);
   EXPECT_TRUE(ContainResult(results, "cout"));
 }
 
 TEST_F(TestClangCompleter, TestReparse) {
   std::string file = "./test/sample1.cc";
-  std::string content = engine_.GetFileContent(file);
-  std::vector<ClangCompleter::Result> results =
+  std::string content = GetFileContent(file);
+  CompletionResults results =
       engine_.CodeComplete(file, content, 4, 1, cpp_arg_manager_);
   EXPECT_TRUE(ContainResult(results, "std"));
 
   engine_.Parse(file, content, cpp_arg_manager_);
-  std::vector<ClangCompleter::Result> results2 =
+  CompletionResults results2 =
       engine_.CodeComplete(file, content, 4, 1, cpp_arg_manager_);
   EXPECT_TRUE(ContainResult(results2, "std"));
 }
@@ -173,12 +180,12 @@ TEST_F(TestClangCompleter, TestReparseUnsavdFile) {
       "  std::\n"
       "}\n";
 
-  std::vector<ClangCompleter::Result> results =
+  CompletionResults results =
       engine_.CodeComplete(file, content, 3, 8, cpp_arg_manager_);
   EXPECT_TRUE(ContainResult(results, "cout"));
 
   engine_.Parse(file, content, cpp_arg_manager_);
-  std::vector<ClangCompleter::Result> results2 =
+  CompletionResults results2 =
       engine_.CodeComplete(file, content, 3, 8, cpp_arg_manager_);
   EXPECT_TRUE(ContainResult(results, "cout"));
 }
@@ -197,8 +204,8 @@ TEST_F(TestClangCompleter, TestAddUnsavedFileWithContent) {
 
 TEST_F(TestClangCompleter, TestObjcBasicLibrary) {
   std::string file = "./test/sample1.m";
-  std::string content = engine_.GetFileContent(file);
-  std::vector<ClangCompleter::Result> results =
+  std::string content = GetFileContent(file);
+  CompletionResults results =
       engine_.CodeComplete(file, content, 6, 1, objc_arg_manager_);
 
   EXPECT_TRUE(ContainResult(results, "NSLog"));
@@ -209,8 +216,8 @@ TEST_F(TestClangCompleter, TestObjcBasicLibrary) {
 
 TEST_F(TestClangCompleter, TestObjcppBasicLibrary) {
   std::string file = "./test/sample1.m";
-  std::string content = engine_.GetFileContent(file);
-  std::vector<ClangCompleter::Result> results =
+  std::string content = GetFileContent(file);
+  CompletionResults results =
       engine_.CodeComplete(file, content, 6, 1, objcpp_arg_manager_);
 
   EXPECT_TRUE(ContainResult(results, "NSLog"));
