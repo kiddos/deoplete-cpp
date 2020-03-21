@@ -23,8 +23,7 @@ class ClangCompleter {
 
   void Parse(const std::string& file, const std::string& content,
              const ArgumentManager& arg_manager);
-  void Update(const ArgumentManager& arg_manager);
-  std::string GetFileContent(const std::string& file);
+  void Update();
   std::vector<Result> CodeComplete(const std::string& file,
                                    const std::string& content, int line,
                                    int column, const ArgumentManager& arg_manager);
