@@ -16,73 +16,47 @@ ClangCompleter::ClangCompleter() : index_(clang_createIndex(1, 1)) {
 }
 
 ClangCompleter::~ClangCompleter() {
-  for (auto it = files_.begin(); it != files_.end(); ++it) {
-    FileContent content = it->second;
-    clang_disposeTranslationUnit(content.second);
+  for (auto it = trans_units_.begin(); it != trans_units_.end(); ++it) {
+    clang_disposeTranslationUnit(it->second);
   }
   clang_disposeIndex(index_);
 }
 
 void ClangCompleter::Parse(const std::string& file, const std::string& content,
                            const ArgumentManager& arg_manager) {
-  std::vector<CXUnsavedFile> unsaved_files;
-  unsaved_files.push_back(CXUnsavedFile{
-      file.c_str(),
-      content.c_str(),
-      content.length(),
-  });
-  for (auto it = files_.begin(); it != files_.end(); ++it) {
-    if (it->first != file) {
-      unsaved_files.push_back(CXUnsavedFile{
-          it->first.c_str(),
-          it->second.first.c_str(),
-          it->second.first.length(),
-      });
-    }
-  }
+  std::vector<CXUnsavedFile> unsaved_files =
+      content_.GetUnsavedFiles(file, content);
 
-  if (files_.find(file) != files_.end()) {
+  if (trans_units_.find(file) != trans_units_.end()) {
     // already added
-    CXTranslationUnit tu = files_[file].second;
-    clang_reparseTranslationUnit(tu, unsaved_files.size(), &unsaved_files[0],
-                                 clang_defaultReparseOptions(tu));
+    CXTranslationUnit trans_unit = trans_units_[file];
+    clang_reparseTranslationUnit(trans_unit, unsaved_files.size(),
+                                 &unsaved_files[0],
+                                 clang_defaultReparseOptions(trans_unit));
 
     cache_.clear();
-    std::string c = content;
-    files_[file] = std::make_pair(c, tu);
+    trans_units_[file] = trans_unit;
   } else {
     // add translation unit
     std::vector<char*> args;
     arg_manager.PrepareArgs(args);
 
-    CXTranslationUnit tu =
-        clang_parseTranslationUnit(index_, file.c_str(), &args[0], args.size(),
-                                   &unsaved_files[0], unsaved_files.size(), parse_option_);
-    std::string c = content;
-    files_[file] = std::make_pair(c, tu);
+    CXTranslationUnit tu = clang_parseTranslationUnit(
+        index_, file.c_str(), &args[0], args.size(), &unsaved_files[0],
+        unsaved_files.size(), parse_option_);
+    trans_units_[file] = tu;
   }
 }
 
-void ClangCompleter::Update(const ArgumentManager& arg_manager) {
-  for (auto it = cache_.begin(); it != cache_.end(); ++it) {
-    CacheData data = it->second;
-    CompletionLocation loc = data.first;
-    if (loc.snap_shot.length() > 0) {
-      std::vector<Result> new_results = ObtainCodeCompleteResult(
-          loc.file, loc.snap_shot, loc.line, loc.column, arg_manager);
-      if (new_results.size() > data.second.size()) {
-        loc.snap_shot = "";
-        it->second = std::make_pair(loc, new_results);
-      }
-    }
+void ClangCompleter::Update() {
+  std::vector<CXUnsavedFile> unsaved_files = content_.GetUnsavedFiles();
+  for (auto it = trans_units_.begin(); it != trans_units_.end(); ++it) {
+    clang_reparseTranslationUnit(it->second, unsaved_files.size(),
+                                 &unsaved_files[0],
+                                 clang_defaultReparseOptions(it->second));
   }
-}
 
-std::string ClangCompleter::GetFileContent(const std::string& file) {
-  std::ifstream input_stream(file);
-  std::string content((std::istreambuf_iterator<char>(input_stream)),
-                      std::istreambuf_iterator<char>());
-  return content;
+  cache_.clear();
 }
 
 std::vector<ClangCompleter::Result> ClangCompleter::ObtainCodeCompleteResult(
@@ -90,25 +64,12 @@ std::vector<ClangCompleter::Result> ClangCompleter::ObtainCodeCompleteResult(
     const ArgumentManager& arg_manager) {
   Parse(file, content, arg_manager);
 
-  CXTranslationUnit tu = files_[file].second;
-  std::vector<CXUnsavedFile> unsaved_files;
-  unsaved_files.push_back(CXUnsavedFile{
-      file.c_str(),
-      content.c_str(),
-      content.length(),
-  });
-  for (auto it = files_.begin(); it != files_.end(); ++it) {
-    if (it->first != file) {
-      unsaved_files.push_back(CXUnsavedFile{
-          it->first.c_str(),
-          it->second.first.c_str(),
-          it->second.first.length(),
-      });
-    }
-  }
-
+  CXTranslationUnit trans_unit = trans_units_[file];
+  std::vector<CXUnsavedFile> unsaved_files =
+      content_.GetUnsavedFiles(file, content);
   CXCodeCompleteResults* results = clang_codeCompleteAt(
-      tu, file.c_str(), line, column, &unsaved_files[0], unsaved_files.size(), complete_option_);
+      trans_unit, file.c_str(), line, column, &unsaved_files[0],
+      unsaved_files.size(), complete_option_);
 
   std::vector<Result> outputs;
   if (results) {
@@ -141,10 +102,10 @@ std::vector<ClangCompleter::Result> ClangCompleter::CodeComplete(
     std::vector<Result> outputs =
         ObtainCodeCompleteResult(file, content, l, c, arg_manager);
     CompletionLocation loc = {file, content, l, c};
-    if (ShouldCache(token)) {
-      CacheData data = std::make_pair(loc, outputs);
-      cache_[token] = data;
-    }
+    // if (ShouldCache(token)) {
+    CacheData data = std::make_pair(loc, outputs);
+    cache_[token] = data;
+    // }
     return outputs;
   }
 }
@@ -220,6 +181,9 @@ ClangCompleter::Result ClangCompleter::GetResult(CXCompletionString cs) {
       case CXCompletionChunk_VerticalSpace:
         kind = "VerticalSpace";
         break;
+      default:
+        kind = "unknown";
+        break;
     }
 
     CXString text = clang_getCompletionChunkText(cs, i);
@@ -229,8 +193,4 @@ ClangCompleter::Result ClangCompleter::GetResult(CXCompletionString cs) {
     result.push_back(std::make_pair(kind, complete_content));
   }
   return result;
-}
-
-bool ClangCompleter::ShouldCache(const std::string& token) {
-  return token.length() > 2 && token.substr(token.length() - 2) == "::";
 }

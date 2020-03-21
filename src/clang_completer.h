@@ -10,6 +10,7 @@
 #include <clang-c/Index.h>
 
 #include "argument_manager.h"
+#include "file_content.h"
 #include "token.h"
 
 class ClangCompleter {
@@ -22,9 +23,7 @@ class ClangCompleter {
 
   void Parse(const std::string& file, const std::string& content,
              const ArgumentManager& arg_manager);
-  void Update(const ArgumentManager& arg_manager);
-
-  std::string GetFileContent(const std::string& file);
+  void Update();
   std::vector<Result> ObtainCodeCompleteResult(
       const std::string& file, const std::string& content, int line, int column,
       const ArgumentManager& arg_manager);
@@ -33,18 +32,17 @@ class ClangCompleter {
                                    int column,
                                    const ArgumentManager& arg_manager);
 
-  int file_count() const { return files_.size(); }
+  int file_count() const { return content_.file_count(); }
 
  private:
   Result GetResult(CXCompletionString cs);
-  bool ShouldCache(const std::string& token);
 
   CXIndex index_;
   int parse_option_;
   int complete_option_;
 
-  typedef std::pair<std::string, CXTranslationUnit> FileContent;
-  std::map<std::string, FileContent> files_;
+  std::map<std::string, CXTranslationUnit> trans_units_;
+  FileContent content_;
 
   struct CompletionLocation {
     std::string file;
