@@ -2,6 +2,12 @@ include_directories("${CMAKE_BINARY_DIR}/clang/include")
 link_directories("${CMAKE_BINARY_DIR}/clang/lib")
 
 file(GLOB SOURCE_FILES *.cc *.h)
+file(GLOB TEST_FILES *_test.cc)
+foreach (test IN LISTS TEST_FILES)
+  message(STATUS "found test: ${test}")
+  list(REMOVE_ITEM SOURCE_FILES ${test})
+endforeach()
+
 add_library(clang_completer ${SOURCE_FILES})
 target_link_libraries(clang_completer clang)
 target_compile_definitions(clang_completer
@@ -28,3 +34,7 @@ install(TARGETS _clang_completer
   DESTINATION "${CMAKE_BINARY_DIR}/../rplugin/python3/deoplete/")
 install(FILES "${CMAKE_BINARY_DIR}/src/clang_completer.py"
   DESTINATION "${CMAKE_BINARY_DIR}/../rplugin/python3/deoplete/")
+
+# test build
+add_executable(test_clang_completer clang_completer_test.cc)
+target_link_libraries(test_clang_completer clang_completer ${GTEST_LIBS})

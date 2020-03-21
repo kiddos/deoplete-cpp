@@ -53,6 +53,18 @@ endif ()
 set(CMAKE_C_COMPILER "${CMAKE_BINARY_DIR}/clang/bin/clang")
 set(CMAKE_CXX_COMPILER "${CMAKE_BINARY_DIR}/clang/bin/clang++")
 
-add_subdirectory(src)
+include(ExternalProject)
+
+ExternalProject_Add(googletest
+  GIT_REPOSITORY    https://github.com/google/googletest.git
+  GIT_TAG           master
+  CMAKE_ARGS        "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/googletest-build"
+  UPDATE_COMMAND    ""
+)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/googletest-build/include)
+set(GTEST_LIBS ${CMAKE_CURRENT_BINARY_DIR}/googletest-build/lib/libgtest.a
+  ${CMAKE_CURRENT_BINARY_DIR}/googletest-build/lib/libgtest_main.a
+  pthread)
+
 enable_testing()
-add_subdirectory(test)
+add_subdirectory(src)
