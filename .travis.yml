@@ -14,9 +14,6 @@ addons:
       - gobjc
       - gnustep-devel
 
-env:
-  - MATRIX_EVAL="CC=gcc-7 CXX=g++-7"
-
 os: linux
 
 matrix:
@@ -31,12 +28,13 @@ before_install:
   # Install a supported cmake version (>= 3.4.3)
   - wget -O cmake.sh https://cmake.org/files/v3.10/cmake-3.10.0-rc1-Linux-x86_64.sh
   - sudo sh cmake.sh --skip-license --exclude-subdir --prefix=/usr/local
-  - eval "${MATRIX_EVAL}"
+  - export CC=gcc-7
+  - export CXX=g++-7
 
 install:
   - mkdir build
   - cd build
-  - eval ${MATRIX_EVAL} cmake ..
+  - cmake ..
   - make
   - make install
   - cd ..
