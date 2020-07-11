@@ -15,39 +15,43 @@ if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Debug)
 endif ()
 
-execute_process(
-  COMMAND lsb_release -r
-  COMMAND cut -d: -f2
-  COMMAND xargs
-  COMMAND tr -d '\n'
-  OUTPUT_VARIABLE UBUNTU_VERSION)
+# execute_process(
+#   COMMAND lsb_release -r
+#   COMMAND cut -d: -f2
+#   COMMAND xargs
+#   COMMAND tr -d '\n'
+#   OUTPUT_VARIABLE UBUNTU_VERSION)
 
-message(STATUS "detected ubuntu version: ${UBUNTU_VERSION}")
+# message(STATUS "detected ubuntu version: ${UBUNTU_VERSION}")
 
 # download clang prebuilt
-if (NOT EXISTS "${CMAKE_BINARY_DIR}/clang.tar.xz")
-  if ("${UBUNTU_VERSION}" STREQUAL "18.04")
-    file(DOWNLOAD https://releases.llvm.org/9.0.0/clang+llvm-9.0.0-x86_64-linux-gnu-ubuntu-18.04.tar.xz
-      "${CMAKE_BINARY_DIR}/clang.tar.xz" SHOW_PROGRESS)
-  elseif ("${UBUNTU_VERSION}" STREQUAL "16.04")
-    file(DOWNLOAD https://releases.llvm.org/9.0.0/clang+llvm-9.0.0-x86_64-linux-gnu-ubuntu-16.04.tar.xz
-      "${CMAKE_BINARY_DIR}/clang.tar.xz" SHOW_PROGRESS)
-  elseif ("${UBUNTU_VERSION}" STREQUAL "14.04")
-    file(DOWNLOAD https://releases.llvm.org/9.0.0/clang+llvm-9.0.0-x86_64-linux-gnu-ubuntu-14.04.tar.xz
-      "${CMAKE_BINARY_DIR}/clang.tar.xz" SHOW_PROGRESS)
+set(CLANG_BINARY "${CMAKE_BINARY_DIR}/clang.tar.xz")
+set(CLANG_VERSION "10.0.0")
+set(CLANG_BASE_URL "https://github.com/llvm/llvm-project/releases/download/llvmorg-${CLANG_VERSION}")
+if (NOT EXISTS ${CLANG_BINARY})
+  # if ("${UBUNTU_VERSION}" STREQUAL "18.04")
+  if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+    set(CLANG_FILE clang+llvm-10.0.0-x86_64-linux-gnu-ubuntu-18.04.tar.xz)
+  elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+    set(CLANG_FILE clang+llvm-10.0.0-x86_64-apple-darwin.tar.xz)
   else ()
     message(FATAL_ERROR "not supported")
   endif ()
+
+  set(CLANG_URL "${CLANG_BASE_URL}/${CLANG_FILE}")
+  message(STATUS "Downloading from ${CLANG_URL}...")
+  file(DOWNLOAD ${CLANG_URL} ${CLANG_BINARY} SHOW_PROGRESS)
 endif ()
 
 if (NOT EXISTS "clang")
   execute_process(
-    COMMAND tar xvf clang.tar.xz
+    COMMAND mkdir -p clang
+    COMMAND tar xvf clang.tar.xz -C clang --strip-components=1
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
-  execute_process(
-    COMMAND mv clang+llvm-9.0.0-x86_64-linux-gnu-ubuntu-${UBUNTU_VERSION} clang
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+  # execute_process(
+  #   COMMAND mv clang+llvm-9.0.0-x86_64-linux-gnu-ubuntu-${UBUNTU_VERSION} clang
+  #   WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 endif ()
 
 set(CMAKE_C_COMPILER "${CMAKE_BINARY_DIR}/clang/bin/clang")
@@ -72,3 +76,10 @@ enable_testing()
 
 # source build
 add_subdirectory(src)
+
+# clean unnecessary files
+add_custom_target(clean-all
+  COMMAND rm -rf ${CMAKE_BINARY_DIR}/clang.tar.xz
+  COMMAND rm -rf ${CMAKE_BINARY_DIR}/clang/bin
+  COMMAND rm -rf ${CMAKE_BINARY_DIR}/clang/libexec
+  COMMAND rm -rf ${CMAKE_BINARY_DIR}/clang/share)
