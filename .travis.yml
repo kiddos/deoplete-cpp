@@ -18,8 +18,6 @@ os: linux
 
 matrix:
   - dist: bionic
-  - dist: xenial
-  - dist: trusty
 
 python:
   - "3.5"
@@ -32,12 +30,7 @@ before_install:
   - export CXX=g++-7
 
 install:
-  - mkdir build
-  - cd build
-  - cmake ..
-  - make
-  - make install
-  - cd ..
+  - ./install.sh
 
 script:
   - ./build/bin/test_clang_completer
